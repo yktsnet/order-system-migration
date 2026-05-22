@@ -1,59 +1,69 @@
-# 🚀 C# Modernization Sandbox: Cloud Native Foundation
+# 🚀 .NET Modernization Lab
+〜レガシーWinFormsからクラウドネイティブな Web API への変遷〜
 
-本リポジトリは、WSL2環境下でLocalStackとTerraformを活用し、AWS実機を使わずにクラウドネイティブなC#開発を行うための共通基盤である。
+本リポジトリは、20年超の運用を経て「技術負債」と化した WinForms 資産を、最新の .NET 8 および React 環境へ安全に移行するためのマイグレーション実証・研究用リポジトリです。
 
-## 🏗️ Architecture Overview
+---
 
-本基盤は以下の要素が連携するエコシステムとして構成されている。
+## 🏛️ 1. レガシーマイグレーションの実証
 
-1.  **Infrastructure (LocalStack & Terraform)**
-    * Docker Compose上で起動する擬似AWS環境。
-    * Terraform (HCL) により、S3バケットなどのリソースをコードで管理。
-2.  **Containerization (Docker)**
-    * .NET 8/9 アプリケーションをマルチステージビルドでコンテナ化。
-    * 環境変数による接続先（LocalStack/本番AWS）の動的切り替え。
-3.  **CI/CD Pipeline (Custom Webhook)**
-    * VPS上のGitBucketへのPushをトリガーとした自作自動化フロー。
-    * 自動テスト (xUnit) 成功時のみコンテナをデプロイする安全なパイプライン。
+### 🛑 Legacy: 現場の負債 (Before)
+legacy/OrderForm.cs にて、保守限界を迎えたデスクトップアプリの構造を再現。
 
-## 📂 Project Structure (Monorepo)
++-----------------------------------------------------------+
+| [ 受注登録 ]  受注番号:[ 2026-001 ] [ 検索 ] <--- 2秒フリーズ |
++-----------------------------------------------------------+
+| 得意先名: [ ＿＿＿＿＿＿＿＿ ]   カテゴリ:[ 事務用品　▼ ] |
+| 商品名称: [ ＿＿＿＿＿＿＿＿ ]                             |
+| --------------------------------------------------------- |
+| 単価:[ 0 ] × 数量:[ 0 ]  = 小計:[ 0 ]                     |
+| 在庫：[ 在庫：- ] (TextChangedイベントで直接DBへSELECT)   |
+| --------------------------------------------------------- |
+| 消費税:[ 0 ]                                              |
+| 合計額:[ 1,122,000 ] (100万超で赤字表示：UIとロジックの癒着) |
+| --------------------------------------------------------- |
+| [ 保存(btnSave) ]  [ 削除 ]         [ 伝票印刷(LPT1) ]      |
+| (ボタン内にSQL結合・在庫更新・トランザクションを全記述)     |
++-----------------------------------------------------------+
 
-本リポジトリは複数のC#プロジェクトを管理するモノリポ構成を採用している。
+■ 負債のエビデンス
+* SQLインジェクション脆弱性: 文字列結合によるクエリ実行。
+* 密結合な設計: 税計算や在庫チェック等のロジックがUIイベント内に散布。
+* 同期I/Oによる操作停止: Thread.Sleep(1500)相当の通信待機により画面がフリーズ。
+* 物理デバイス依存: LPT1ポートへの直接出力など、クラウド移行の障壁。
+
+### ✨ Modern: 近代化の解答 (After)
+ロジックを完全に分離し、マルチデバイス対応を実現した Web 構成。
+
+* Frontend: React + Tailwind CSS。SPA構成により、操作中の画面フリーズを解消。
+* Backend: .NET 8 Minimal API。Entity Framework Core 8 による型安全なデータアクセス。
+* Business Logic: UIから切り離し、API側で独立してテスト可能な状態へ再構築。
+
+🌐 Live Demo
+https://modern-demo.example.com
+(Cloudflare Tunnelを経由し、検証用サーバー上のDockerコンテナへ接続します)
+
+---
+
+## 🛠️ 2. 近代化を加速させる運用基盤
+近代化されたアプリの品質とデプロイ速度を担保する、自動化された開発エコシステム。
+
+* 環境のコード化と抽象化 (IaC / LocalStack)
+  - Terraformによりインフラを定義。AWS実機を使わず、課金リスクゼロで本番同等の検証環境を完全再現。
+* 環境依存の排除 (Docker)
+  - マルチステージビルドによるコンテナ化。特定のWindowsサーバーに縛られない「どこでも動く」特性を確保。
+* 品質担保の自動化 (CI/CD / xUnit)
+  - xUnitによる自動テストを基盤化。Pushをトリガーにテストからデプロイまでを完結させる自作パイプライン。
+
+---
+
+## 📂 リポジトリ構成
 
 .
-├── docker-compose.yml      # 共通インフラ（LocalStack）および全アプリの定義
-├── main.tf                 # Terraformによるクラウドリソース定義
-├── ci.sh                   # 自動テスト・ビルド・デプロイを制御する指揮者
-├── webhook_listener.py     # GitBucketからの通知を受け取る窓口
-├── CloudNativeApp/         # C#プロジェクト 1（Project B 実装）
-├── CloudNativeApp.Tests/   # プロジェクト 1 用のテスト
-└── [FutureProjects]/       # 今後追加される Project A 等の各プロジェクト
-
-## 🚀 Getting Started
-
-### 1. インフラの起動
-ルートディレクトリにて、LocalStackおよび各コンテナを起動する。
-
-docker compose up -d
-
-### 2. リソースの適用
-Terraformを用いて、LocalStack内に必要なAWSリソースを作成する。
-
-terraform init
-terraform apply -auto-approve
-
-## 🔗 CI/CD Workflow
-
-本基盤における自動化フローは以下の通りである。
-
-1.  **Code Push**: ローカルでの開発完了後、`gb-push` でGitBucketへ送信。
-2.  **Webhook Notification**: GitBucketからSSHトンネルを通じてWSL2のリスナーへ通知。
-3.  **Automated Testing**: `ci.sh` が起動し、`dotnet test` を実行。
-    * プロジェクトが増えた場合、`ci.sh` にテスト対象を追加することで、全プロジェクトの品質を担保する。
-4.  **Auto Deployment**: 全テスト合格時のみ、`docker compose up -d --build` によりコンテナが最新版へ更新される。
-
-## 💡 Key Design Patterns
-
-* **Infrastructure as Code (IaC)**: インフラの変更はすべて `main.tf` を通じて行い、手動設定を排除する。
-* **Environment Abstraction**: アプリケーション側は接続先を意識せず、環境変数 `AWS__ServiceURL` を参照して動作する。
-* **Fail-Safe Deployment**: テストが1つでも失敗した場合、古いコンテナを維持し、壊れたコードが反映されるのを防ぐ。
+├── legacy/           # 移行元：WinForms技術負債の再現コード
+│   └── OrderForm.cs  # ★リプレイス対象
+├── src/              # 移行先：モダンスタックによる再構築
+│   ├── Api/          # ASP.NET Core Minimal API (.NET 8)
+│   └── Web/          # React Frontend (Vite)
+├── infrastructure/   # 運用基盤：IaC定義およびCI/CD
+└── docker-compose.yml # 共通インフラおよび全アプリの統合定義
