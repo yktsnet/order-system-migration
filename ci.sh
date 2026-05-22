@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "🚀 CI/CD Pipeline Started: $(date)"
+
+# 1. 最新のコードを取得
+git pull origin main
+
+# 2. テストの実行
+echo "🧪 Running Tests..."
+dotnet test CloudNativeApp.Tests/CloudNativeApp.Tests.csproj
+if [ $? -ne 0 ]; then
+    echo "❌ Tests Failed. Deployment aborted."
+    exit 1
+fi
+
+# 3. テスト成功時のみコンテナを再構築・起動
+echo "🏗️ Tests Passed! Deploying..."
+docker compose up -d --build
+
+echo "✅ Deployment Successful: $(date)"
