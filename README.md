@@ -8,8 +8,7 @@
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」**のプロセスを提示することにあります。
 
-**Demo:** https://<your-tunnel>.trycloudflare.com  
-**Swagger:** https://<your-tunnel>.trycloudflare.com/swagger
+**Demo:** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/
 
 ### 学習のポイント
 * **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
