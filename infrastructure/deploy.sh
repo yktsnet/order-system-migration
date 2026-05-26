@@ -1,36 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 VPS="widget-vps"
 VPS_APP_DIR="/home/k_yamakawa/ops/modernization-lab"
 PUBLISH_DIR="./publish/api"
-
-echo "==> [1/5] .NET publish"
+echo "==> [1/4] .NET publish"
 dotnet publish src/Api/CloudNativeApp.csproj \
   -c Release \
   -r linux-x64 \
   --self-contained true \
   -o "$PUBLISH_DIR"
-
-echo "==> [2/5] React build"
+echo "==> [2/4] React build"
 (cd src/Web && npm ci && npm run build)
-
-echo "==> [3/5] rsync API"
+echo "==> [3/4] rsync API"
 rsync -az --delete \
   --exclude='appsettings*.json' \
   "$PUBLISH_DIR/" \
   "$VPS:$VPS_APP_DIR/"
-
-echo "==> [4/5] rsync frontend"
+echo "==> [4/4] rsync frontend"
 rsync -az --delete \
   src/Web/dist/ \
   "$VPS:$VPS_APP_DIR/wwwroot/"
-
-echo "==> [5/5] DB schema apply"
-ssh "$VPS" "PGPASSWORD=demo1234 psql -h 127.0.0.1 -U postgres -d HANBAI" \
-  < infrastructure/db/init/01_schema.sql
-
-echo "==> [5/5] service restart"
+echo "==> [5/5] service restart"  
 ssh "$VPS" "sudo systemctl restart modernization-lab.service && systemctl is-active modernization-lab.service"
-
 echo "==> done"
