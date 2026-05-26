@@ -17,7 +17,7 @@ interface OrderHistory {
 }
 
 function App() {
-  const API_BASE = "http://localhost:5153";
+  const API_BASE = "";
 
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form');
   const [categories, setCategories] = useState<Category[]>([]);
