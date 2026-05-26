@@ -4,17 +4,19 @@
 
 ---
 
-## 1. Overview & Goal
+## 1. 概要とゴール
 
-本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」**のプロセスを提示することにあります。
+本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにあります。
 
-**Demo:** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/
+**Demo:** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/  
+**API ドキュメント (Swagger UI):** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/swagger
 
-### 学習のポイント
-* **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
-* **分離**: UI、Service、Repository、データアクセス層への構造分離
-* **刷新**: .NET 8 Web API と React による最新スタックへの移行
-* **品質**: テスタビリティの確保と単体テストの導入
+### 実戦のポイント
+
+- **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
+- **分離**: UI、Service、Repository、データアクセス層への構造分離
+- **刷新**: .NET 8 Web API と React による最新スタックへの移行
+- **品質**: テスタビリティの確保と単体テストの導入
 
 ---
 
@@ -23,7 +25,8 @@
 `legacy/OrderForm.cs` では、古い業務アプリに典型的な「1つのクラスがすべてを知りすぎている」状態を再現しています。
 
 ### 構成イメージ
-```text
+
+```
 +-----------------------------------------------------------+
 | [ 受注登録画面 ]                                     [×] |
 +-----------------------------------------------------------+
@@ -45,10 +48,11 @@
 ```
 
 ### 主な課題点
-* **UI イベント内の重い処理**: `TextChanged` 等での同期 DB 通信により UI がフリーズする。
-* **SQL インジェクションのリスク**: 文字列結合による SQL 組み立て。
-* **ドメインロジックの散逸**: 税計算や在庫更新が画面クラスに直接記述され、再利用やテストが不能。
-* **ハードウェア依存**: LPT1 ポート指定など、特定の実行環境（Windows 端末）に強く依存。
+
+- **UI イベント内の重い処理**: `TextChanged` 等での同期 DB 通信により UI がフリーズする。
+- **SQL インジェクションのリスク**: 文字列結合による SQL 組み立て。
+- **ドメインロジックの散逸**: 税計算や在庫更新が画面クラスに直接記述され、再利用やテストが不能。
+- **ハードウェア依存**: LPT1 ポート指定など、特定の実行環境（Windows 端末）に強く依存。
 
 ---
 
@@ -57,32 +61,33 @@
 移行後は、責務に応じてコンポーネントを完全に分離し、Web 標準の技術スタックで再構築します。
 
 ### 構成
-1.  **Frontend (React/TypeScript)**: 状態管理と UI 表示に専念。
-2.  **Backend (ASP.NET Core)**: 業務ロジック（Service 層）とデータアクセスを隠蔽。
-3.  **Database**: 疎結合なアクセス（Entity Framework Core / Dapper）。
+
+1. **Frontend (React/TypeScript)**: 状態管理と UI 表示に専念。
+2. **Backend (ASP.NET Core)**: 業務ロジック（Service 層）とデータアクセスを隠蔽。
+3. **Database**: 疎結合なアクセス（Entity Framework Core / Dapper）。
 
 ### 移行アプローチ
-* **UI とロジックの完全分離**: 画面から DB へ直接アクセスせず、すべて API 経由で非同期に処理。
-* **Service 層の導入**: 税計算や在庫確認を独立したクラスへ切り出し、単体テストを可能にする。
-* **安全なデータアクセス**: パラメータ化クエリまたは ORM を使用。
-* **ポータビリティ**: Docker 化により、実行環境に依存しないデプロイを実現。
+
+- **UI とロジックの完全分離**: 画面から DB へ直接アクセスせず、すべて API 経由で非同期に処理。
+- **Service 層の導入**: 税計算や在庫確認を独立したクラスへ切り出し、単体テストを可能にする。
+- **安全なデータアクセス**: パラメータ化クエリ（Dapper）を使用。
+- **ポータビリティ**: Docker 化により、実行環境に依存しないデプロイを実現。
 
 ### 実装された主な新機能
-* **注文履歴の可視化**: 過去の受注データを一覧で確認できる「注文履歴」タブを新設。
-* **安全な取消処理**: 履歴一覧からの削除アクションに連動し、APIのトランザクション内で在庫の自動復元を安全に実行。
+
+- **注文履歴の可視化**: 過去の受注データを一覧で確認できる「注文履歴」タブを新設。
+- **安全な取消処理**: 履歴一覧からの削除アクションに連動し、API のトランザクション内で在庫の自動復元を安全に実行。
 
 ---
 
 ## 4. 技術スタック
 
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | React, TypeScript, Vite, Tailwind CSS |
-| **Backend** | .NET 8 (Minimal API), xUnit |
-| **Database** | PostgreSQL / SQLite (EF Core / Dapper) |
-| **Infrastructure** | Docker Compose, Cloudflare Tunnel |
-
----
+| Layer              | Technology                             |
+| ------------------ | -------------------------------------- |
+| **Frontend**       | React, TypeScript, Vite, Tailwind CSS  |
+| **Backend**        | .NET 8 (Minimal API), xUnit            |
+| **Database**       | PostgreSQL / SQLite (EF Core / Dapper) |
+| **Infrastructure** | Docker Compose, Cloudflare Tunnel      |
 
 ---
 
@@ -96,20 +101,27 @@
 4. **セーフティネット (Unit Test)**: 既存機能を壊さずにリファクタリングするための武器を装備。
 5. **検証容易性の確保**: Service 層と単体テストにより、変更時の影響を確認しやすくする。
 
-> [!TIP]
-> **Focus & Scope**
-> 本プロジェクトは**「レガシー資産の解体と構造分離」**に特化しています。そのため、実務で必要な「認証・認可 (Auth0 等)」や「本番用 DB の冗長化構成」などは**対象外(Out-of-Scope)**としています。
+> **Focus & Scope**  
+> 本プロジェクトは **「レガシー資産の解体と構造分離」** に特化しています。  
+> 「認証・認可 (Auth0 等)」や「本番用 DB の冗長化構成」などは **対象外 (Out-of-Scope)** としています。
+
+> **インフラ補足**: デモは Cloudflare Tunnel（一時 URL）で公開。
+> 本番想定では Cloudflare Zero Trust による独自ドメイン＋アクセス制御、
+> または Terraform 定義を AWS (ECS/RDS) へ拡張してデプロイ。
 
 ---
 
 ## 6. ディレクトリ構造
-```text
+
+```
 .
-  ├── legacy/            # Before: WinForms風の密結合サンプル
-  ├── src/
-  │   ├── Api/           # .NET 8 Web API (Service / Repository)
-  │   ├── Api.Tests/     # API / Service層の単体テスト
-  │   └── Web/           # React Frontend
-  ├── docs/              # 移行計画・詳細ドキュメント
-  └── docker-compose.yml
+├── legacy/            # Before: WinForms風の密結合サンプル
+├── src/
+│   ├── Api/           # .NET 8 Web API (Service / Repository)
+│   ├── Api.Tests/     # API / Service層の単体テスト
+│   └── Web/           # React Frontend
+├── docs/
+│   ├── architecture.md   # アーキテクチャ図（Mermaid）
+│   └── migration-plan.md # 移行フェーズ定義
+└── docker-compose.yml
 ```

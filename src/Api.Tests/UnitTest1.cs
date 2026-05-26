@@ -1,34 +1,66 @@
-using Amazon.S3;
-using Xunit;
+using Microsoft.Extensions.Configuration;
+using CloudNativeApp.Services;
 
 namespace CloudNativeApp.Tests;
 
-public class S3IntegrationTest
+public class OrderServiceTests
 {
-    private readonly IAmazonS3 _s3Client;
-
-    public S3IntegrationTest()
+    private static OrderService MakeService()
     {
-        // テスト時も LocalStack を見に行くように設定
-        var config = new AmazonS3Config
-        {
-            ServiceURL = "http://localhost:4566",
-            ForcePathStyle = true
-        };
-        _s3Client = new AmazonS3Client("test", "test", config);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:DefaultConnection"] = "Host=test"
+            })
+            .Build();
+        return new OrderService(config);
+    }
+
+    [Theory]
+    [InlineData(1000,   1,   1000,  100,   1100, false)]
+    [InlineData(85000, 12, 1020000, 102000, 1122000, true)]
+    [InlineData(100000, 11, 1100000, 110000, 1210000, true)]
+    [InlineData(11,     1,    11,    1,      12, false)]
+    public void Calculate_ReturnsCorrectValues(
+        decimal price, int qty,
+        decimal expectedSub, decimal expectedTax, decimal expectedTotal,
+        bool expectedIsHigh)
+    {
+        var svc = MakeService();
+        var result = svc.Calculate(price, qty);
+
+        Assert.Equal(expectedSub,    result.SubTotal);
+        Assert.Equal(expectedTax,    result.TaxAmount);
+        Assert.Equal(expectedTotal,  result.TotalAmount);
+        Assert.Equal(expectedIsHigh, result.IsHighAmount);
     }
 
     [Fact]
-    public async Task LocalStack_ShouldHave_OurTrainingBucket()
+    public void Calculate_IsHighAmount_False_WhenTotalIsExactlyOneMillion()
     {
-        // Arrange (準備): Terraformで作ったはずのバケット名
-        var expectedBucket = "my-local-training-bucket";
+        var svc = MakeService();
+        var result = svc.Calculate(909091, 1);
 
-        // Act (実行): バケット一覧を取得
-        var response = await _s3Client.ListBucketsAsync();
-        var bucketNames = response.Buckets.Select(b => b.BucketName);
+        Assert.Equal(1_000_000m, result.TotalAmount);
+        Assert.False(result.IsHighAmount);
+    }
 
-        // Assert (検証): 期待したバケットが存在するか
-        Assert.Contains(expectedBucket, bucketNames);
+    [Fact]
+    public void Calculate_Tax_IsFloored_NotRounded()
+    {
+        var svc = MakeService();
+        var result = svc.Calculate(3, 1);
+
+        Assert.Equal(0m,  result.TaxAmount);
+        Assert.Equal(3m,  result.TotalAmount);
+    }
+
+    [Fact]
+    public void Calculate_SubTotal_IsPrice_MultipliedBy_Qty()
+    {
+        var svc = MakeService();
+        var result = svc.Calculate(500, 7);
+
+        Assert.Equal(3500m, result.SubTotal);
     }
 }

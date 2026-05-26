@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-api:
+    name: .NET Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: |
+          dotnet restore src/Api/CloudNativeApp.csproj
+          dotnet restore src/Api.Tests/CloudNativeApp.Tests.csproj
+
+      - name: Build
+        run: |
+          dotnet build src/Api/CloudNativeApp.csproj --no-restore --configuration Release
+          dotnet build src/Api.Tests/CloudNativeApp.Tests.csproj --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test src/Api.Tests/CloudNativeApp.Tests.csproj --no-build --configuration Release --verbosity normal
+
+  build-web:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: src/Web
+
+      - name: Build
+        run: npm run build
+        working-directory: src/Web

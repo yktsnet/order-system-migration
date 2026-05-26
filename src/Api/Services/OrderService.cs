@@ -39,8 +39,9 @@ public class OrderService
 
     public OrderService(IConfiguration config)
     {
-        _connectionString = config.GetConnectionString("DefaultConnection") 
-            ?? "Host=localhost;Database=HANBAI;Username=postgres;Password=p@ssw0rd;";
+        _connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection が設定されていません。");
     }
 
     public OrderSummary Calculate(decimal price, int qty)

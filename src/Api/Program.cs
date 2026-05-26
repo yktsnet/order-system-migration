@@ -13,7 +13,10 @@ builder.Services.AddSwaggerGen();
 // CORS設定：React(5173ポート)からの通信を許可
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        var origins = builder.Configuration
+            .GetSection("AllowedOrigins")
+            .Get<string[]>() ?? ["http://localhost:5173"];
+        policy.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -36,10 +39,8 @@ app.UseCors();
 app.UseDefaultFiles(); // index.htmlをデフォルトとして扱う
 app.UseStaticFiles();  // wwwrootフォルダの中身を公開する
 
-if (app.Environment.IsDevelopment()) {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // --- エンドポイント定義 ---
 
