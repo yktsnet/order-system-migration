@@ -1,6 +1,6 @@
 # .NET Modernization Lab
 
-[![CI](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml)
 
 レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 8 Web API + React` への段階的移行を実践するためのサンプルプロジェクトです。
 
