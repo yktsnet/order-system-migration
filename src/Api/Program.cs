@@ -34,8 +34,13 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwagger(options => {
+    options.RouteTemplate = "api-docs/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(options => {
+    options.RoutePrefix = "api-docs";
+    options.SwaggerEndpoint("/api-docs/v1/swagger.json", "CloudNativeApp v1");
+});
 
 // --- エンドポイント定義 ---
 

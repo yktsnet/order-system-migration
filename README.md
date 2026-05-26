@@ -10,10 +10,10 @@
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにあります。
 
-**Demo:** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/  
-**API ドキュメント (Swagger UI):** https://theoretical-spouse-strengthen-nuclear.trycloudflare.com/swagger
+**Demo:** https://preceding-camel-remains-traveler.trycloudflare.com/  
+**API ドキュメント (Swagger UI):** https://preceding-camel-remains-traveler.trycloudflare.com/api-docs
 
-### 実戦のポイント
+### 実践のポイント
 
 - **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
 - **分離**: UI、Service、Repository、データアクセス層への構造分離
