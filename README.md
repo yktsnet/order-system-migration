@@ -137,12 +137,18 @@
 │   └── workflows/               # CI/CD パイプライン定義（GitHub Actions: 自動ビルド・テスト）
 ├── docs/
 │   ├── architecture.md          # アーキテクチャ図（Mermaid）
+│   ├── design.md                # UI デザイン方針（カラー・コンポーネント規則）
 │   └── migration-plan.md        # 移行フェーズ定義
 ├── infrastructure/              # IaC・インフラストラクチャ定義
-│   ├── db/init/
-│   │   └── 01_schema.sql        # データベース初期化用 SQL
+│   ├── db/
+│   │   ├── init/
+│   │   │   └── 01_schema.sql        # データベース初期化用 SQL
+│   │   └── seed/
+│   │       ├── generate_seed.py     # サンプルデータ生成スクリプト
+│   │       └── 02_seed.sql          # 生成済みサンプルデータ（400件）
 │   ├── deploy.sh                # WSL → VPS デプロイスクリプト（ビルド・転送・再起動）
 │   ├── db-init.sh               # DB 初期化スクリプト（初回のみ実行）
+│   ├── db-seed.sh               # サンプルデータ投入スクリプト
 │   ├── main.tf                  # Terraform 定義（AWS ECS/RDS/S3 等の環境構築用）
 │   ├── ci.sh                    # CI/デプロイ支援スクリプト
 │   └── webhook_listener.py      # Webhook 受信・処理スクリプト
@@ -153,4 +159,4 @@
 │   ├── Api.Tests/               # xUnit による Service 層の単体テスト
 │   └── Web/                     # After: React Frontend (Vite / TypeScript / Tailwind CSS)
 ├── docker-compose.yml           # ローカル開発用コンテナ構成（API / PostgreSQL / LocalStack）
-└── README.md                    # 本ドキュメント
+```
