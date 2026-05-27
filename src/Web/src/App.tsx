@@ -34,6 +34,7 @@ function App() {
 
   // 履歴フィルタ
   const [filterCustomer, setFilterCustomer] = useState("");
+  const [filterItem, setFilterItem] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState(0);
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
@@ -54,6 +55,7 @@ function App() {
   const buildFilterQuery = () => {
     const params = new URLSearchParams();
     if (filterCustomer) params.set('customerName', filterCustomer);
+    if (filterItem) params.set('itemName', filterItem);
     if (filterCategoryId > 0) params.set('categoryId', String(filterCategoryId));
     if (filterFrom) params.set('from', filterFrom);
     if (filterTo) params.set('to', filterTo);
@@ -232,6 +234,17 @@ function App() {
                     type="text"
                     value={filterCustomer}
                     onChange={e => setFilterCustomer(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && fetchHistory()}
+                    placeholder="部分一致"
+                    className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-36"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">商品名</label>
+                  <input
+                    type="text"
+                    value={filterItem}
+                    onChange={e => setFilterItem(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && fetchHistory()}
                     placeholder="部分一致"
                     className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-36"

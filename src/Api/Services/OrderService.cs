@@ -37,6 +37,7 @@ public record OrderSummary(
 public record OrderFilterParams(
     string? CustomerName,
     int? CategoryId,
+    string? ItemName,
     DateTime? From,
     DateTime? To
 );
@@ -80,6 +81,11 @@ public class OrderService
         {
             conditions.Add("o.customername ILIKE @CustomerName");
             parameters.Add("CustomerName", $"%{filter.CustomerName}%");
+        }
+        if (!string.IsNullOrWhiteSpace(filter?.ItemName))
+        {
+            conditions.Add("o.itemname ILIKE @ItemName");
+            parameters.Add("ItemName", $"%{filter.ItemName}%");
         }
         if (filter?.CategoryId.HasValue == true)
         {

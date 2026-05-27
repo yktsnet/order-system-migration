@@ -52,10 +52,11 @@ app.MapGet("/orders", async (
     OrderService service,
     string? customerName,
     int? categoryId,
+    string? itemName,
     DateTime? from,
     DateTime? to) =>
 {
-    var filter = new OrderFilterParams(customerName, categoryId, from, to);
+    var filter = new OrderFilterParams(customerName, categoryId, itemName, from, to);
     var orders = await service.GetOrdersAsync(filter);
     return Results.Ok(orders);
 });
@@ -65,10 +66,11 @@ app.MapGet("/orders/export", async (
     OrderService service,
     string? customerName,
     int? categoryId,
+    string? itemName,
     DateTime? from,
     DateTime? to) =>
 {
-    var filter = new OrderFilterParams(customerName, categoryId, from, to);
+    var filter = new OrderFilterParams(customerName, categoryId, itemName, from, to);
     var csvBytes = await service.GetOrdersCsvAsync(filter);
     return Results.File(csvBytes, "text/csv; charset=utf-8", "orders.csv");
 });
