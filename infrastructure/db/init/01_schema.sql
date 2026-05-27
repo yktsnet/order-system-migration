@@ -20,6 +20,16 @@ CREATE TABLE IF NOT EXISTS Orders (
     Qty INT,
     TotalAmount DECIMAL(18, 2)
 );
+-- Agent ログ（Phase 2）
+CREATE TABLE IF NOT EXISTS AgentLog (
+    id SERIAL PRIMARY KEY,
+    logged_at TIMESTAMP DEFAULT NOW(),
+    question TEXT NOT NULL,
+    generated_sql TEXT,
+    success BOOLEAN NOT NULL,
+    retry_count INT DEFAULT 0,
+    error_message TEXT
+);
 -- サンプルデータ投入
 INSERT INTO M_Category (CategoryName) VALUES ('事務用品'), ('家具'), ('消耗品')
     ON CONFLICT DO NOTHING;
