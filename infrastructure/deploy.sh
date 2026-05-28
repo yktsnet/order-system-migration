@@ -24,11 +24,11 @@ rsync -az --delete \
   "$VPS:$VPS_APP_DIR/wwwroot/"
 echo "==> [5/5] rsync Agent"
 rsync -az --delete \
-  --filter='protect .env' \
   -e "ssh -o ClearAllForwardings=yes" \
-  --exclude='__pycache__' \
-  --exclude='*.pyc' \
   --exclude='.env' \
+  --exclude='.venv/' \
+  --exclude='__pycache__/' \
+  --exclude='*.pyc' \
   src/Agent/ \
   "$VPS:$VPS_APP_DIR/agent/"
 echo "==> done"
