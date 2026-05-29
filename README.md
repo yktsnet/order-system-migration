@@ -1,6 +1,6 @@
-# .NET WinForms Migration
+# .NET WinForms Migration（発注システム）
 
-[![CI](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kyamakawa-widget/dotnet-modernization-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/kyamakawa-widget/dotnet-winforms-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kyamakawa-widget/dotnet-winforms-migration/actions/workflows/ci.yml)
 
 レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 8 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
 
@@ -12,7 +12,8 @@
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにある。
 
-**Demo:** ※ 面談時オンデマンド起動（Cloudflare Tunnel）  
+**Demo:** https://preceding-camel-remains-traveler.trycloudflare.com/  
+※ WinForms After / WebForms After で URL を共用。どちらか一方が稼働中。  
 **API ドキュメント (Swagger UI):** `/api-docs`
 
 ### 実践のポイント
@@ -235,34 +236,34 @@ src/Agent/
 
 ## 7. デモ運用
 
-### After デモ
-面談時のみ VPS 上でオンデマンド起動（`systemctl start`）。
+**Demo:** https://preceding-camel-remains-traveler.trycloudflare.com/  
+※ WinForms After / WebForms After で URL を共用。どちらか一方が稼働中。
 
 [dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration)（WebForms After）と本リポ（WinForms After）は、**同一の Cloudflare Tunnel・同一 URL** を共用している。Tunnel は常時稼働のまま、背後の systemd サービスを排他的に切り替えることで、URL を変えずに 2 つの After デモを提示できる。
 
 ```mermaid
 graph LR
-    User["ブラウザ（面談時）"]
+    User["ブラウザ"]
     Tunnel["Cloudflare Tunnel\n同一 URL / localhost:5153"]
     subgraph VPS["VPS"]
-        SVC1["modernization-lab.service\nWinForms After"]
+        SVC1["winforms-migration.service\nWinForms After"]
         SVC2["webforms-migration.service\nWebForms After"]
         DB[("PostgreSQL")]
     end
-    User -->|"HTTPS（オンデマンド）"| Tunnel
+    User -->|"HTTPS"| Tunnel
     Tunnel -->|"active 時のみ"| SVC1
     Tunnel -->|"active 時のみ"| SVC2
     SVC1 --> DB
     SVC2 --> DB
 ```
 
-常にどちらか一方のみ active（systemd で排他切替）。Tunnel の設定変更・URL 再発行なしに両デモを切り替えられる。
+常にどちらか一方のみ active（`switch-demo.sh` で排他切替）。Tunnel の設定変更・URL 再発行なしに両デモを切り替えられる。
 
 ---
 
 ## 8. dotnet-webforms-migration との対比
 
-| | dotnet-modernization-lab（本リポ） | [dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration) |
+| | dotnet-winforms-migration（本リポ） | [dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration) |
 |---|---|---|
 | **Before** | WinForms（デスクトップ） | WebForms（レガシー Web） |
 | **問題の性質** | 実行時に表面化する問題 | 稼働しながら蓄積する構造的負債 |
