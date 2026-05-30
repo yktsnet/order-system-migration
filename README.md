@@ -1,10 +1,46 @@
 # .NET WinForms Migration（発注システム）
 
-[![CI](https://github.com/kyamakawa-widget/dotnet-winforms-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kyamakawa-widget/dotnet-winforms-migration/actions/workflows/ci.yml)
+[![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
 
 レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 8 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
 
-[dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration)（WebForms 移行）の姉妹リポ。WinForms 固有の問題（UI フリーズ・LPT1 依存・画面クラスへのロジック集中）の解体と再構成に加え、**責務分離が完了した構造への AI 機能の追加統合**まで扱う。
+[attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms 移行）の姉妹リポ。WinForms 固有の問題（UI フリーズ・LPT1 依存・画面クラスへのロジック集中）の解体と再構成に加え、**責務分離が完了した構造への AI 機能の追加統合**まで扱う。
+
+---
+
+## クイックスタート
+
+### 前提
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- .NET SDK 8.0（ローカル開発時）
+- Node.js 20+（ローカル開発時）
+
+### フル起動（Docker のみ）
+
+```bash
+cp .env.example .env  # GEMINI_API_KEY を記入
+docker compose up -d --build
+```
+
+- Frontend + API: http://localhost:5153
+- Swagger UI: http://localhost:5153/api-docs
+- Python Agent: http://localhost:8001
+
+### ローカル開発（HMR あり）
+
+```bash
+# 1. DB のみ起動
+docker compose up db -d
+
+# 2. バックエンド（別ターミナル）
+cd src/Api && dotnet run
+
+# 3. フロントエンド（別ターミナル）
+cd src/Web && npm ci && npm run dev
+```
+
+- API: http://localhost:5153
+- Frontend (Vite HMR): http://localhost:5173
 
 ---
 
@@ -12,8 +48,7 @@
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにある。
 
-**Demo:** https://preceding-camel-remains-traveler.trycloudflare.com/  
-※ WinForms After / WebForms After で URL を共用。どちらか一方が稼働中。  
+**After Demo:** https://winforms.ykts.net  
 **API ドキュメント (Swagger UI):** `/api-docs`
 
 ### 実践のポイント
@@ -153,7 +188,7 @@ React → .NET 8 API → PostgreSQL
         Python FastAPI (Agent) → LangGraph → PostgreSQL
 ```
 
-React は .NET API と Python Agent それぞれに直接通信する。AI 推論を .NET 経由にせず、業務ロジックと推論の責務を明確に分離したまま維持。
+React からの `/chat` リクエストは .NET API が受け取り、内部で Agent（`http://agent:8001`）へ転送する。AI 推論の責務を分離したまま、ブラウザから直接 Agent を公開しない構成。
 
 ### LangGraph フロー
 
@@ -212,7 +247,7 @@ src/Agent/
 | **AI Agent** | Python, FastAPI, LangGraph, Gemini API |
 | **Database** | PostgreSQL (Dapper / psycopg2) |
 | **Object Storage** | LocalStack (AWS S3 互換) |
-| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions |
+| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (オンプレ) |
 
 ---
 
@@ -230,40 +265,47 @@ src/Agent/
 > 認証・認可の本格実装・本番用 DB の冗長化構成・会話履歴管理は **対象外 (Out-of-Scope)**。
 >
 > **Agent の認証について**  
-> Python Agent（`/chat`）は意図的に認証なしで実装。推論サービスは推論のみに専念させる責務分離の方針により、認証は .NET API 側で一元管理する設計を想定。本番化する際の構成は `React → .NET /chat [Authorize] → localhost:8001/chat`。Agent は VPS 内部からのみ受け付ける前提。
+> Python Agent は Docker ネットワーク内部にのみ公開。ブラウザからの `/chat` リクエストは .NET API が中継し、Agent へは `http://agent:8001` で転送する。Agent を外部に直接露出しない構成。
 
 ---
 
 ## 7. デモ運用
 
-**Demo:** https://preceding-camel-remains-traveler.trycloudflare.com/  
-※ WinForms After / WebForms After で URL を共用。どちらか一方が稼働中。
+**After Demo:** https://winforms.ykts.net
 
-[dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration)（WebForms After）と本リポ（WinForms After）は、**同一の Cloudflare Tunnel・同一 URL** を共用している。Tunnel は常時稼働のまま、背後の systemd サービスを排他的に切り替えることで、URL を変えずに 2 つの After デモを提示できる。
+[attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms After）と本リポ（WinForms After）はそれぞれ独立した Cloudflare Tunnel を持ち、**両方常時稼働**する。
 
 ```mermaid
 graph LR
     User["ブラウザ"]
-    Tunnel["Cloudflare Tunnel\n同一 URL / localhost:5153"]
-    subgraph VPS["VPS"]
-        SVC1["winforms-migration.service\nWinForms After"]
-        SVC2["webforms-migration.service\nWebForms After"]
-        DB[("PostgreSQL")]
+    TunnelWIN["Cloudflare Tunnel\nwinforms.ykts.net"]
+    TunnelWF["Cloudflare Tunnel\nwebforms.ykts.net"]
+    subgraph SERVER["オンプレサーバー（NixOS）"]
+        SVC1["order-system-migration\nDocker Compose :5153"]
+        SVC2["attendance-system-migration\nDocker Compose :5154"]
+        DB1[("PostgreSQL")]
+        DB2[("PostgreSQL")]
     end
-    User -->|"HTTPS"| Tunnel
-    Tunnel -->|"active 時のみ"| SVC1
-    Tunnel -->|"active 時のみ"| SVC2
-    SVC1 --> DB
-    SVC2 --> DB
+    User -->|"HTTPS"| TunnelWIN
+    User -->|"HTTPS"| TunnelWF
+    TunnelWIN --> SVC1
+    TunnelWF --> SVC2
+    SVC1 --> DB1
+    SVC2 --> DB2
 ```
 
-常にどちらか一方のみ active（`switch-demo.sh` で排他切替）。Tunnel の設定変更・URL 再発行なしに両デモを切り替えられる。
+### デプロイ手順（初回）
+
+```bash
+cp .env.example .env  # GEMINI_API_KEY を記入
+./infrastructure/deploy.sh
+```
 
 ---
 
-## 8. dotnet-webforms-migration との対比
+## 8. attendance-system-migration との対比
 
-| | dotnet-winforms-migration（本リポ） | [dotnet-webforms-migration](https://github.com/kyamakawa-widget/dotnet-webforms-migration) |
+| | order-system-migration（本リポ） | [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) |
 |---|---|---|
 | **Before** | WinForms（デスクトップ） | WebForms（レガシー Web） |
 | **問題の性質** | 実行時に表面化する問題 | 稼働しながら蓄積する構造的負債 |
@@ -290,8 +332,7 @@ graph LR
 │   │   └── seed/
 │   │       ├── generate_seed.py          # サンプルデータ生成スクリプト
 │   │       └── 02_seed.sql               # 生成済みサンプルデータ（400件・6ヶ月分）
-│   ├── agent-setup.sh                    # VPS 初回セットアップ（venv 構築・systemd 登録）
-│   ├── deploy.sh                         # WSL → VPS デプロイ（ビルド・転送・再起動）
+│   ├── deploy.sh                         # Mac → SV6 デプロイ（rsync・docker compose up）
 │   ├── db-init.sh                        # DB 初期化（初回のみ）
 │   ├── db-seed.sh                        # サンプルデータ投入
 │   ├── main.tf                           # Terraform 定義（AWS ECS/RDS/S3 環境構築用）
