@@ -39,3 +39,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 PLAN.md
+
+# --- Claude / personal context ---
+.claude/
+CLAUDE.md
+context/
+issues/
+src/Api/appsettings.Development.json

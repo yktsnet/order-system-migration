@@ -1,7 +1,7 @@
 services:
   localstack:
-    container_name: localstack_main
     image: localstack/localstack:latest
+    restart: unless-stopped
     ports:
       - "127.0.0.1:4566:4566"
     environment:
@@ -9,10 +9,8 @@ services:
     volumes:
       - "./volume:/var/lib/localstack"
   db:
-    container_name: postgres_db
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-p@ssw0rd}
@@ -20,32 +18,40 @@ services:
     volumes:
       - ./infrastructure/db/init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   app:
-    container_name: csharp_app
     build:
       context: .
       dockerfile: src/Api/Dockerfile
+    restart: unless-stopped
     ports:
       - "5153:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ConnectionStrings__DefaultConnection=Host=db;Database=${POSTGRES_DB:-HANBAI};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-p@ssw0rd};
-      - AWS__ServiceURL=http://localstack_main:4566
+      - AWS__ServiceURL=http://localstack:4566
       - ASPNETCORE_URLS=http://+:8080
     depends_on:
-      - localstack
-      - db
+      db:
+        condition: service_healthy
+      localstack:
+        condition: service_started
   agent:
-    container_name: python_agent
     build:
       context: ./src/Agent
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "8001:8001"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 volumes:
   postgres_data:

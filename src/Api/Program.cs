@@ -90,7 +90,7 @@ app.MapPost("/chat", async (HttpContext ctx) => {
     using var client = new HttpClient();
     var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
     var resp = await client.PostAsync(
-        "http://localhost:8001/chat",
+        "http://agent:8001/chat",
         new StringContent(body, System.Text.Encoding.UTF8, "application/json")
     );
     var result = await resp.Content.ReadAsStringAsync();
