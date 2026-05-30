@@ -7,7 +7,7 @@ fi
 
 REMOTE="${DEPLOY_HOST:-sv6}"
 REMOTE_USER="${DEPLOY_USER:-sv6}"
-APP_PATH="/home/${REMOTE_USER}/dotfiles/apps/corp/order-system-migration"
+APP_PATH="/home/${REMOTE_USER}/github-public/order-system-migration"
 
 echo "==> [1/3] ディレクトリ確保"
 ssh "$REMOTE" "mkdir -p $APP_PATH"
