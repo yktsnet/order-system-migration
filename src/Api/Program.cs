@@ -1,12 +1,9 @@
 using Amazon.S3;
 using CloudNativeApp.Services;
-
 var builder = WebApplication.CreateBuilder(args);
-
 // --- 共通設定 ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 // CORS設定：React(5173ポート)からの通信を許可
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => {
@@ -16,7 +13,6 @@ builder.Services.AddCors(options => {
         policy.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader();
     });
 });
-
 // --- Service / DB 設定 ---
 builder.Services.AddScoped<TaxService>();
 builder.Services.AddScoped<OrderService>();
@@ -25,9 +21,12 @@ builder.Services.AddSingleton<IAmazonS3>(sp => {
     var config = new AmazonS3Config { ServiceURL = serviceUrl, ForcePathStyle = true };
     return new AmazonS3Client("test", "test", config);
 });
-
+// Agent プロキシ用 HttpClient（IHttpClientFactory 経由でソケット再利用）
+builder.Services.AddHttpClient("agent", c => {
+    var agentUrl = builder.Configuration["AgentBaseUrl"] ?? "http://agent:8001/";
+    c.BaseAddress = new Uri(agentUrl);
+});
 var app = builder.Build();
-
 app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -38,15 +37,12 @@ app.UseSwaggerUI(options => {
     options.RoutePrefix = "api-docs";
     options.SwaggerEndpoint("/api-docs/v1/swagger.json", "CloudNativeApp v1");
 });
-
 // --- エンドポイント定義 ---
-
 // 1. カテゴリマスタ取得
 app.MapGet("/categories", async (OrderService service) => {
     var categories = await service.GetCategoriesAsync();
     return Results.Ok(categories);
 });
-
 // 2. 受注履歴の取得（フィルタ対応）
 app.MapGet("/orders", async (
     OrderService service,
@@ -60,7 +56,6 @@ app.MapGet("/orders", async (
     var orders = await service.GetOrdersAsync(filter);
     return Results.Ok(orders);
 });
-
 // 3. 受注履歴 CSV エクスポート
 app.MapGet("/orders/export", async (
     OrderService service,
@@ -74,7 +69,6 @@ app.MapGet("/orders/export", async (
     var csvBytes = await service.GetOrdersCsvAsync(filter);
     return Results.File(csvBytes, "text/csv; charset=utf-8", "orders.csv");
 });
-
 // 4. 受注登録
 app.MapPost("/orders", async (CreateOrderRequest req, OrderService service) => {
     try {
@@ -84,19 +78,17 @@ app.MapPost("/orders", async (CreateOrderRequest req, OrderService service) => {
         return Results.Problem(ex.Message);
     }
 });
-
-// 追加: /chat → Python Agent プロキシ
-app.MapPost("/chat", async (HttpContext ctx) => {
-    using var client = new HttpClient();
+// /chat → Python Agent プロキシ（IHttpClientFactory 経由）
+app.MapPost("/chat", async (HttpContext ctx, IHttpClientFactory factory) => {
+    var client = factory.CreateClient("agent");
     var body = await new StreamReader(ctx.Request.Body).ReadToEndAsync();
     var resp = await client.PostAsync(
-        "http://agent:8001/chat",
+        "chat",
         new StringContent(body, System.Text.Encoding.UTF8, "application/json")
     );
     var result = await resp.Content.ReadAsStringAsync();
     return Results.Content(result, "application/json");
 });
-
 // 5. 受注取消
 app.MapDelete("/orders/{orderNo}", async (string orderNo, OrderService service) => {
     try {
@@ -106,6 +98,5 @@ app.MapDelete("/orders/{orderNo}", async (string orderNo, OrderService service) 
         return Results.Problem(ex.Message);
     }
 });
-
 app.MapFallbackToFile("index.html");
 app.Run();

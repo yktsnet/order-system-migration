@@ -8,6 +8,8 @@ services:
       - DEBUG=1
     volumes:
       - "./volume:/var/lib/localstack"
+      # 起動完了後にバケットを自動作成（awslocal はLocalStack同梱）
+      - "./infrastructure/localstack/init:/etc/localstack/init/ready.d"
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -34,6 +36,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ConnectionStrings__DefaultConnection=Host=db;Database=${POSTGRES_DB:-HANBAI};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-p@ssw0rd};
       - AWS__ServiceURL=http://localstack:4566
+      - AWS__BucketName=order-exports
       - ASPNETCORE_URLS=http://+:8080
     depends_on:
       db:
