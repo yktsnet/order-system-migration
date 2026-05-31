@@ -9,7 +9,12 @@ namespace LegacyWinFormsApp
 {
     public partial class OrderForm : Form
     {
+        // ❌ 接続文字列（IPアドレス・パスワード含む）をフィールドに直書き。
+        //    ソースコード管理に含まれると認証情報が漏洩する。
         private string connStr = "Server=192.168.1.10;Database=HANBAI;User Id=sa;Password=p@ssw0rd;";
+
+        // ❌ 編集モードの判定をフォームのフィールドで管理。
+        //    状態がUIクラスに散在し、ロジックの追跡が困難になる。
         private bool isEditMode = false;
         private decimal _taxRate = 0.1m;
 
@@ -29,6 +34,8 @@ namespace LegacyWinFormsApp
             {
                 try
                 {
+                    // ❌ パラメータ化クエリを使っていないが、ここはマスタ固定なので実害は少ない。
+                    //    ただし後続のメソッドと同じパターンで書かれているため、可読性上の一貫性がない。
                     string sql = "SELECT CategoryId, CategoryName FROM M_Category WHERE DeleteFlg=0";
                     SqlDataAdapter da = new SqlDataAdapter(sql, conn);
                     DataTable dt = new DataTable();
@@ -48,6 +55,8 @@ namespace LegacyWinFormsApp
         {
             try
             {
+                // ❌ 文字列結合によるSQL組み立て。
+                //    txtOrderNo.Text に SQL メタ文字が含まれると任意のSQL文が実行される（SQLインジェクション）。
                 string sql = "SELECT * FROM Orders WHERE OrderNo='" + txtOrderNo.Text + "'";
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
@@ -66,6 +75,10 @@ namespace LegacyWinFormsApp
                         isEditMode = true;
                     }
                 }
+
+                // ❌ UIスレッド上で Thread.Sleep を呼び出している。
+                //    この間、画面全体が応答不能になる（フリーズ）。
+                //    Application.DoEvents() で一時的に操作を受け付けるが、再入可能性の問題を生む。
                 Thread.Sleep(2000);
                 Application.DoEvents();
             }
@@ -83,6 +96,9 @@ namespace LegacyWinFormsApp
                 decimal price = decimal.Parse(txtPrice.Text);
                 int qty = int.Parse(txtQty.Text);
                 decimal sub = price * qty;
+
+                // ❌ 税計算ロジックがUIクラスに直書き。
+                //    税率変更や端数処理の変更がここにしか反映されず、単体テストも不可能。
                 decimal tax = sub * _taxRate;
                 decimal total = sub + tax;
 
@@ -91,21 +107,27 @@ namespace LegacyWinFormsApp
                 lblTotal.Text = total.ToString("#,##0");
                 lblTotal.ForeColor = total > 1000000? Color.Red : Color.Black;
 
+                // ❌ 合計計算のたびに在庫をDBから取得している（後述 CheckStock）。
                 CheckStock(txtItemName.Text);
             }
-            catch { }
+            catch { }  // ❌ 例外を握り潰している。計算失敗が無音で通過する。
         }
 
+        // ❌ TextChanged イベント（キー入力ごと）から CalculateTotal → CheckStock の順でDB通信が発生する。
+        //    商品名を1文字入力するたびにUIスレッドがブロックされる。
         private void txtPrice_TextChanged(object sender, EventArgs e) => CalculateTotal();
         private void txtQty_TextChanged(object sender, EventArgs e) => CalculateTotal();
 
         private void CheckStock(string itemName)
         {
             if (string.IsNullOrEmpty(itemName)) return;
+
+            // ❌ 文字列結合によるSQL組み立て（SQLインジェクションリスク）。
             string sql = "SELECT CurrentStock FROM M_Stock WHERE ItemName='" + itemName + "'";
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
+                // ❌ UIスレッドで同期的にスリープ＋DB通信。入力のたびに1.5秒フリーズする。
                 Thread.Sleep(1500);
                 object r = new SqlCommand(sql, conn).ExecuteScalar();
                 lblStock.Text = "在庫：" + (r?? "0").ToString();
@@ -127,6 +149,9 @@ namespace LegacyWinFormsApp
                     string sql;
                     if (isEditMode)
                     {
+                        // ❌ 文字列結合によるSQL組み立て（SQLインジェクションリスク）。
+                        //    isEditMode フラグで INSERT / UPDATE を分岐しており、
+                        //    保存ボタン1つが「登録」と「更新」の両責務を持っている。
                         sql = "UPDATE Orders SET CustomerName='" + txtCustomer.Text + "', CategoryId=" + cmbCategory.SelectedValue +
                               ", ItemName='" + txtItemName.Text + "', Price=" + txtPrice.Text + ", Qty=" + txtQty.Text +
                               ", TotalAmount=" + lblTotal.Text.Replace(",", "") + " WHERE OrderNo='" + txtOrderNo.Text + "'";
@@ -140,6 +165,8 @@ namespace LegacyWinFormsApp
                     }
                     new SqlCommand(sql, conn, tran).ExecuteNonQuery();
 
+                    // ❌ 在庫更新SQLも同一メソッド内に混在。
+                    //    受注登録・在庫更新・トランザクション制御がすべてUIイベントハンドラに集中している。
                     string sqlStock = "UPDATE M_Stock SET CurrentStock = CurrentStock - " + txtQty.Text +
                                       " WHERE ItemName='" + txtItemName.Text + "'";
                     int updated = new SqlCommand(sqlStock, conn, tran).ExecuteNonQuery();
@@ -168,6 +195,9 @@ namespace LegacyWinFormsApp
 
         private void btnPrint_Click(object sender, EventArgs e)
         {
+            // ❌ LPT1（パラレルポート）への直接印刷。
+            //    このアプリが特定のWindows端末にしか存在できない根本的な原因。
+            //    仮想化・コンテナ化・クラウド移行のいずれも不可能にする制約。
             MessageBox.Show("プリンタ（LPT1）に送信しました。");
         }
 
@@ -177,6 +207,8 @@ namespace LegacyWinFormsApp
             {
                 try
                 {
+                    // ❌ 文字列結合によるSQL（SQLインジェクションリスク）。
+                    //    削除時に在庫を復元する処理がない。受注取消と在庫管理が分断されている。
                     string sql = "DELETE FROM Orders WHERE OrderNo='" + txtOrderNo.Text + "'";
                     using (SqlConnection conn = new SqlConnection(connStr))
                     {
