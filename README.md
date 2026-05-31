@@ -114,7 +114,7 @@ graph TD
 ```
 
 > **Before コードについて**  
-> `legacy/OrderForm.cs` には実際の WinForms コード（コメント付き）を収録。実行環境は不要で、コードレベルの問題を読み取るためのリファレンスとして機能する。
+> [legacy/LegacyWinFormsApp/OrderForm.cs](legacy/LegacyWinFormsApp/OrderForm.cs) には実際の WinForms コード（コメント付き）を収録。実行環境は不要で、コードレベルの問題を読み取るためのリファレンスとして機能する。
 
 ---
 
@@ -158,15 +158,18 @@ OrderService（DBアクセス・トランザクション管理）
 |---|---|---|
 | GET | `/categories` | カテゴリマスタ取得 |
 | GET | `/orders` | 受注履歴一覧（得意先名・商品名・カテゴリ・期間でフィルタ可） |
-| GET | `/orders/export` | 受注履歴 CSV エクスポート（フィルタ条件を引き継ぎ・UTF-8 BOM） |
+| GET | `/orders/export` | 受注履歴 CSV エクスポート（フィルタ条件を引き継ぎ・UTF-8 BOM・S3 アーカイブ保存） |
 | POST | `/orders` | 受注登録（在庫更新をトランザクション内で実行） |
 | DELETE | `/orders/{orderNo}` | 受注取消（在庫自動復元をトランザクション内で実行） |
+
+> **書き込み操作を「登録」と「取消」に限定している理由**  
+> 修正操作を許容すると誤操作による在庫不整合のリスクが高まる。操作の確実性を優先し、更新系は登録と取消のみに絞った。
 
 ---
 
 ## 4. After Phase 2 — AI 自然言語インターフェース
 
-密結合のままでは AI を独立したコンポーネントとして追加できない。Phase 1 の分離が完了した構造を前提に、「CSV → Excel 手動集計」という運用を自然言語インターフェースで置き換える。
+密結合のままでは AI を独立したコンポーネントとして追加できない。Phase 1 の分離が完了した構造を前提に、「CSV → Excel 手動集計」という運用を自然言語インターフェースで置き換える。非エンジニアが担当者を介さず自律的にデータ確認できる状態を目指す。
 
 ### Before / After
 
@@ -216,13 +219,16 @@ src/Agent/
 ├── schema_prompt.py  # DB スキーマをプロンプト文字列で定義
 ├── db.py             # PostgreSQL 接続（psycopg2）
 ├── requirements.txt
+├── requirements-dev.txt
+├── tests/            # pytest（36 ケース）
 └── Dockerfile
 ```
 
 ### 主な設計判断
 
-- **LLM は Gemini API**: 低コストでデモ環境を継続稼働できる。
-- **Text-to-SQL（RAG ではない）**: 対象が構造化された PostgreSQL スキーマのため、ベクトル検索より SQL 生成が適切。
+- **LangGraph を採用**: ノード単位で状態を明示管理することで、エラー発生時の追跡性（どのプロンプトが原因かの特定）と、将来的なモデル改善サイクルへの発展性を確保。なお実際の改善サイクル運用は本プロジェクトのスコープ外。
+- **LLM は Gemini 3.1 Flash-lite**: 無料枠でリクエスト上限が高く、他モデルは制限に達しやすいため本要件では一択。低コストでデモ環境を継続稼働できる。
+- **Text-to-SQL（RAG ではない）**: 入力が「商品名・得意先・金額」等の構造化済みフィールドであり、RAG ほどの複雑さを必要としない規模感。既存システムが SQL ベースで構築されている点でも親和性が高い。
 - **SELECT 文のみ許可**: `validate_sql` ノードで DDL/DML を弾き、DB への副作用を排除。
 - **リトライ最大 2 回**: SQL 実行失敗時に `generate_sql` へ戻り、エラー内容を LLM へフィードバック。
 - **エージェントログ**: フロー終了時に `AgentLog` テーブルへ記録。生成 SQL の失敗パターン把握・異常 SQL の監査に使用。
@@ -246,7 +252,7 @@ src/Agent/
 | **Backend** | .NET 8 (Minimal API), xUnit |
 | **AI Agent** | Python, FastAPI, LangGraph, Gemini API |
 | **Database** | PostgreSQL (Dapper / psycopg2) |
-| **Object Storage** | LocalStack (AWS S3 互換) |
+| **Object Storage** | LocalStack (AWS S3 互換) — `AWS__ServiceURL` の差し替えのみで本番 S3 へ移行可能 |
 | **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (オンプレ) |
 
 ---
@@ -255,9 +261,9 @@ src/Agent/
 
 1. **ロジックの軽量抽出 (Minimal API)**: 巨大な `OrderForm.cs` を疎結合な Web API へ分解。
 2. **環境の抽象化 (IaC)**: Terraform を用い、特定のサーバー環境への依存を排除。
-3. **ポータビリティ (Docker)**: 「Windows でしか動かない」制約を破壊し、クラウドへの道を確保。
-4. **セーフティネット (Unit Test)**: 既存機能を壊さずにリファクタリングするための武器を装備。
-5. **CI/CD のパイプライン化 (GitHub Actions)**: push ごとにビルド・テストを自動実行し、品質を継続的に担保。
+3. **ポータビリティ (Docker)**: 「Windows でしか動かない」制約を破壊し、クラウドへの道を確保。LocalStack によるストレージの事前検証も同一スタック内で完結する。
+4. **セーフティネット (Unit Test)**: 既存機能を壊さずにリファクタリングするための武器を装備。xUnit（.NET 境界値 7 ケース）と pytest（Agent 36 ケース）で両レイヤーをカバー。
+5. **CI/CD のパイプライン化 (GitHub Actions)**: push ごとにビルド・テスト（.NET・React・Python Agent）を自動実行し、品質を継続的に担保。
 6. **AI 統合の容易化**: 責務分離が完了した構造では、AI サービスを独立したコンポーネントとして追加できる。業務ロジックに手を入れることなく自然言語インターフェースを統合したことがその実証。
 
 > **Focus & Scope**  
@@ -322,7 +328,7 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 .
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                        # CI（.NET テスト + React ビルド）
+│       └── ci.yml                        # CI（.NET テスト・React ビルド・Python Agent テスト）
 ├── docs/
 │   └── design.md                         # UI デザイン方針（カラー・コンポーネント規則）
 ├── infrastructure/
@@ -332,6 +338,9 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 │   │   └── seed/
 │   │       ├── generate_seed.py          # サンプルデータ生成スクリプト
 │   │       └── 02_seed.sql               # 生成済みサンプルデータ（400件・6ヶ月分）
+│   ├── localstack/
+│   │   └── init/
+│   │       └── 01_create_bucket.sh       # LocalStack 起動後にバケットを自動作成
 │   ├── deploy.sh                         # Mac → SV6 デプロイ（rsync・docker compose up）
 │   ├── db-init.sh                        # DB 初期化（初回のみ）
 │   ├── db-seed.sh                        # サンプルデータ投入
@@ -348,6 +357,8 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 │   │   ├── schema_prompt.py
 │   │   ├── db.py
 │   │   ├── requirements.txt
+│   │   ├── requirements-dev.txt
+│   │   ├── tests/                        # pytest（36 ケース・LLM/DB はモック）
 │   │   └── Dockerfile
 │   ├── Api/                              # After: .NET 8 Minimal API
 │   │   ├── Endpoints/
