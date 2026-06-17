@@ -300,16 +300,13 @@ graph LR
     SVC2 --> DB2
 ```
 
-### デプロイ設計と技術選定の判断基準 (Webhook連動プル型デプロイ)
+### デプロイ設計
 
-本プロジェクトのデプロイは、外部（インターネット）からオンプレミスサーバーへの接続を一切必要としない **「プル（Pull）型セルフデプロイ方式」** を採用しています。
+本プロジェクトのデプロイは、GitHub Actions から Tailscale 経由で SV6 に rsync し、`docker compose up --build` を実行する **「プッシュ型デプロイ方式」** を採用しています。
 
-* **セキュリティ優先のゼロトラスト設計**:
-  外部からオンプレミスサーバー（NixOS）への SSH ポート等の直接開放を完全に排除しています。外部からの侵入経路（アタックサーフェス）を作らないため、安全性が極めて高い設計です。
-* **秘密鍵の漏洩リスク排除**:
-  GitHub Secrets などの外部サービスに、サーバー管理者権限を持つ SSH 秘密鍵を保管する必要がありません。万が一 GitHub 側のクレデンシャルが漏洩した場合でも、物理サーバーへの直接侵入を防ぐことができます。
-* **完全閉塞ネットワークへの適応**:
-  Cloudflare Tunnel 等と組み合わせることにより、インバウンドポートがすべて閉じられたネットワーク内からでも、GitHub からのプッシュイベント（Webhook）をトリガーとして安全に最新ソースコードを `pull` し、自律的にコンテナをビルド・起動できます。
+* main ブランチへの push をトリガーに GitHub Actions が起動
+* テスト通過後、Tailscale VPN 経由で SSH 接続しソースを転送
+* サーバー側で `docker compose up -d --build` を実行してコンテナを更新
 
 ### デプロイ手順（初回）
 
@@ -339,7 +336,8 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 .
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                        # CI（.NET テスト・React ビルド・Python Agent テスト）
+│       ├── ci.yml                        # CI（.NET テスト・React ビルド・Python Agent テスト）
+│       └── deploy.yml                    # Deploy（Tailscale 経由 rsync + docker compose up）
 ├── docs/
 │   └── design.md                         # UI デザイン方針（カラー・コンポーネント規則）
 ├── infrastructure/
@@ -356,8 +354,6 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 │   ├── db-init.sh                        # DB 初期化（初回のみ）
 │   ├── db-seed.sh                        # サンプルデータ投入
 │   ├── main.tf                           # Terraform 定義（AWS ECS/RDS/S3 環境構築用）
-│   ├── ci.sh                             # CI/デプロイ支援スクリプト
-│   └── webhook_listener.py               # Webhook 受信・処理スクリプト
 ├── legacy/
 │   └── LegacyWinFormsApp/
 │       └── OrderForm.cs                  # Before（変更なし・コードレベルの問題リファレンス）
