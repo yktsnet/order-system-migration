@@ -11,3 +11,14 @@ export interface CreateOrderRequest {
   price: number;
   qty: number;
 }
+
+export interface OrderHistory {
+  orderNo: string;
+  orderDate: string;
+  customerName: string;
+  itemName: string;
+  price: number;
+  qty: number;
+  totalAmount: number;
+  categoryName: string;
+}
