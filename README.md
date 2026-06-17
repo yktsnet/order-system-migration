@@ -1,4 +1,4 @@
-# .NET WinForms Migration（発注システム）
+# .NET WinForms Migration (Order Management System)
 
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
 
@@ -8,14 +8,14 @@
 
 ---
 
-## クイックスタート
+## Quick Start
 
-### 前提
+### Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - .NET SDK 8.0（ローカル開発時）
 - Node.js 20+（ローカル開発時）
 
-### フル起動（Docker のみ）
+### Full Setup (Docker only)
 
 ```bash
 cp .env.example .env  # GEMINI_API_KEY を記入
@@ -26,7 +26,7 @@ docker compose up -d --build
 - Swagger UI: http://localhost:5153/api-docs
 - Python Agent: http://localhost:8001
 
-### ローカル開発（HMR あり）
+### Local Development (with HMR)
 
 ```bash
 # 1. DB のみ起動
@@ -44,14 +44,14 @@ cd src/Web && npm ci && npm run dev
 
 ---
 
-## 1. 概要とゴール
+## 1. Overview and Goals
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにある。
 
 **After Demo:** https://winforms.ykts.net  
 **API ドキュメント (Swagger UI):** `/api-docs`
 
-### 実践のポイント
+### Key Practices
 
 - **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
 - **分離**: UI、Service、Repository 層への責務分離
@@ -61,11 +61,11 @@ cd src/Web && npm ci && npm run dev
 
 ---
 
-## 2. Before: レガシーな密結合の実態
+## 2. Before: The Reality of Legacy Tight Coupling
 
 `legacy/LegacyWinFormsApp/` では、古い業務アプリに典型的な「1つのクラスがすべてを知りすぎている」状態を再現。
 
-### 業務の背景
+### Business Background
 
 - 発注業務は Windows 端末上の専用アプリ（WinForms）で完結していた
 - 履歴確認・検索は別端末・別システムで行っていた
@@ -93,7 +93,7 @@ cd src/Web && npm ci && npm run dev
 +-----------------------------------------------------------+
 ```
 
-### 主な課題点
+### Key Issues
 
 - **UI イベント内の重い処理**: `TextChanged` 等での同期 DB 通信により UI がフリーズする。
 - **SQL インジェクションのリスク**: 文字列結合による SQL 組み立て。
@@ -118,11 +118,11 @@ graph TD
 
 ---
 
-## 3. After Phase 1 — モダンアーキテクチャへの転換
+## 3. After Phase 1 — Transition to Modern Architecture
 
 移行後は責務に応じてコンポーネントを完全に分離し、Windows 環境依存・UI フリーズ・SQL インジェクションリスクを排除する。
 
-### 移行アプローチ
+### Migration Approach
 
 - **UI とロジックの完全分離**: 画面から DB へ直接アクセスせず、すべて API 経由で非同期処理。
 - **Service 層の導入**: 税計算・在庫確認・トランザクション管理を `OrderService` へ切り出し、単体テストを可能にする。
@@ -143,7 +143,7 @@ graph LR
     DAP --> DB
 ```
 
-### 計算ロジックの分離（テスタビリティ）
+### Separation of Calculation Logic (Testability)
 
 `TaxService` を `OrderService` から独立させ、DB 接続なしで計算ロジック単体をテスト可能にしている。
 
@@ -152,7 +152,7 @@ OrderService（DBアクセス・トランザクション管理）
     └── TaxService（純粋計算）← xUnit が直接テスト（境界値 7 ケース）
 ```
 
-### 実装エンドポイント
+### Implemented Endpoints
 
 | Method | Path | 説明 |
 |---|---|---|
@@ -167,7 +167,7 @@ OrderService（DBアクセス・トランザクション管理）
 
 ---
 
-## 4. After Phase 2 — AI 自然言語インターフェース
+## 4. After Phase 2 — AI Natural Language Interface
 
 密結合のままでは AI を独立したコンポーネントとして追加できない。Phase 1 の分離が完了した構造を前提に、「CSV → Excel 手動集計」という運用を自然言語インターフェースで置き換える。非エンジニアが担当者を介さず自律的にデータ確認できる状態を目指す。
 
@@ -179,7 +179,7 @@ OrderService（DBアクセス・トランザクション管理）
 | 得意先ランキングは担当者が加工して初めて判明 | 「ランキングは？」の一言で回答 |
 | 事前に画面を作っていない集計軸には対応不可 | スキーマが同じなら任意の集計が可能 |
 
-### 全体構成
+### Overall Architecture
 
 ```
 【Phase 1】
@@ -193,7 +193,7 @@ React → .NET 8 API → PostgreSQL
 
 React からの `/chat` リクエストは .NET API が受け取り、内部で Agent（`http://agent:8001`）へ転送する。AI 推論の責務を分離したまま、ブラウザから直接 Agent を公開しない構成。
 
-### LangGraph フロー
+### LangGraph Flow
 
 ```mermaid
 flowchart TD
@@ -210,7 +210,7 @@ flowchart TD
     format_response --> END_OK([END])
 ```
 
-### Agent の内部構成
+### Agent Internal Structure
 
 ```
 src/Agent/
@@ -224,7 +224,7 @@ src/Agent/
 └── Dockerfile
 ```
 
-### 主な設計判断
+### Key Design Decisions
 
 - **LangGraph を採用**: ノード単位で状態を明示管理することで、エラー発生時の追跡性（どのプロンプトが原因かの特定）と、将来的なモデル改善サイクルへの発展性を確保。なお実際の改善サイクル運用は本プロジェクトのスコープ外。
 - **LLM は Gemini 3.1 Flash-lite**: 無料枠でリクエスト上限が高く、他モデルは制限に達しやすいため本要件では一択。低コストでデモ環境を継続稼働できる。
@@ -234,7 +234,7 @@ src/Agent/
 - **エージェントログ**: フロー終了時に `AgentLog` テーブルへ記録。生成 SQL の失敗パターン把握・異常 SQL の監査に使用。
 - **責務分離の維持**: 業務ロジックに手を入れることなく自然言語インターフェースを統合。
 
-### 対応する質問例
+### Example Queries
 
 - 「先月の受注件数は？」
 - 「カテゴリ別の売上合計を教えて」
@@ -244,7 +244,7 @@ src/Agent/
 
 ---
 
-## 5. 技術スタック
+## 5. Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -257,7 +257,7 @@ src/Agent/
 
 ---
 
-## 6. モダナイゼーションの方針
+## 6. Modernization Policy
 
 1. **ロジックの軽量抽出 (Minimal API)**: 巨大な `OrderForm.cs` を疎結合な Web API へ分解。
 2. **環境の抽象化 (IaC)**: Terraform を用い、特定のサーバー環境への依存を排除。
@@ -275,7 +275,7 @@ src/Agent/
 
 ---
 
-## 7. デモ運用
+## 7. Demo Operations
 
 **After Demo:** https://winforms.ykts.net
 
@@ -300,7 +300,7 @@ graph LR
     SVC2 --> DB2
 ```
 
-### デプロイ設計
+### Deployment Design
 
 本プロジェクトのデプロイは、GitHub Actions から Tailscale 経由で SV6 に rsync し、`docker compose up --build` を実行する **「プッシュ型デプロイ方式」** を採用しています。
 
@@ -308,7 +308,7 @@ graph LR
 * テスト通過後、Tailscale VPN 経由で SSH 接続しソースを転送
 * サーバー側で `docker compose up -d --build` を実行してコンテナを更新
 
-### デプロイ手順（初回）
+### Deployment Steps (Initial)
 
 ```bash
 cp .env.example .env  # GEMINI_API_KEY を記入
@@ -317,7 +317,7 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 
 ---
 
-## 8. attendance-system-migration との対比
+## 8. Comparison with attendance-system-migration
 
 | | order-system-migration（本リポ） | [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) |
 |---|---|---|
@@ -330,7 +330,7 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 
 ---
 
-## 9. ディレクトリ構造
+## 9. Directory Structure
 
 ```
 .
