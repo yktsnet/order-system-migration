@@ -1,15 +1,21 @@
 services:
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:3.8
     restart: unless-stopped
     ports:
       - "127.0.0.1:4566:4566"
     environment:
-      - DEBUG=1
+      - DEBUG=0
+      - LS_LOG=warn
     volumes:
       - "./volume:/var/lib/localstack"
       # 起動完了後にバケットを自動作成（awslocal はLocalStack同梱）
       - "./infrastructure/localstack/init:/etc/localstack/init/ready.d"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -25,6 +31,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   app:
     build:
       context: .
@@ -43,6 +54,11 @@ services:
         condition: service_healthy
       localstack:
         condition: service_started
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   agent:
     build:
       context: ./src/Agent
@@ -56,5 +72,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 volumes:
   postgres_data:
