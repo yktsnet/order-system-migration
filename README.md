@@ -1,6 +1,7 @@
 # .NET WinForms Migration (Order Management System)
 
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
+[![Deploy](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml)
 
 レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 8 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
 
@@ -29,18 +30,24 @@ docker compose up -d --build
 ### Local Development (with HMR)
 
 ```bash
-# 1. DB のみ起動
-docker compose up db -d
+# 1. DB・LocalStack のみ起動
+docker compose up db localstack -d
 
 # 2. バックエンド（別ターミナル）
 cd src/Api && dotnet run
 
 # 3. フロントエンド（別ターミナル）
 cd src/Web && npm ci && npm run dev
+
+# 4. Python Agent（別ターミナル）
+cd src/Agent
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
 ```
 
 - API: http://localhost:5153
 - Frontend (Vite HMR): http://localhost:5173
+- Python Agent: http://localhost:8001
 
 ---
 
@@ -309,6 +316,20 @@ graph LR
 * サーバー側で `docker compose up -d --build` を実行してコンテナを更新
 
 ### Deployment Steps (Initial)
+
+**1. GitHub Secrets の設定**
+
+GitHub リポジトリの Settings → Secrets → Actions に以下を登録してください。
+
+| Secret | 説明 |
+|---|---|
+| `DEPLOY_HOST` | デプロイ先の Tailscale ホスト名（例: `sv6.tail166775.ts.net`） |
+| `DEPLOY_USER` | デプロイ先のユーザー名（例: `sv6`） |
+| `SSH_PRIVATE_KEY` | デプロイ先への SSH 秘密鍵 |
+| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID（Keys: Write スコープ） |
+| `TS_OAUTH_SECRET` | Tailscale OAuth Secret |
+
+**2. 初回デプロイ**
 
 ```bash
 cp .env.example .env  # GEMINI_API_KEY を記入
