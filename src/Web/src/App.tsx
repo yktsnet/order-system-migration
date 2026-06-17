@@ -128,27 +128,27 @@ function App() {
   };
 
   const tabClass = (tab: typeof activeTab) =>
-    `px-4 py-2 text-xs font-bold flex items-center gap-2 rounded-t-md transition-all ${
+    `px-4 py-2 text-xs font-bold flex items-center gap-2 rounded-t-md transition-all flex-shrink-0 ${
       activeTab === tab
         ? "bg-slate-50 border-t border-l border-r text-sky-600"
         : "text-slate-400 hover:text-slate-600"
     }`;
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900">
-      <header className="flex items-center justify-between h-10 px-4 border-b bg-white shrink-0 shadow-sm">
+    <div className="flex flex-col min-h-screen w-full bg-slate-50 font-sans text-slate-900">
+      <header className="flex items-center justify-between h-10 px-4 border-b bg-white shrink-0 shadow-sm flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Package2 className="w-4 h-4 text-sky-600" />
           <span className="font-bold text-slate-700 uppercase tracking-tight">受注管理システム</span>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-slate-500">
+        <div className="hidden sm:flex items-center gap-4 text-[11px] text-slate-500">
           <div className="flex items-center gap-1"><Database className="w-3 h-3 text-green-500" /> DB: Online</div>
           <div className="flex items-center gap-1"><Cloud className="w-3 h-3 text-green-500" /> S3: Connected</div>
         </div>
       </header>
 
       {/* タブ */}
-      <div className="bg-white border-b px-4 flex gap-1 pt-2">
+      <div className="bg-white border-b px-4 flex gap-1 pt-2 overflow-x-auto whitespace-nowrap scrollbar-none">
         <button onClick={() => setActiveTab("form")} className={tabClass("form")}>
           <PlusCircle className="w-3.5 h-3.5" /> 受注登録
         </button>
@@ -160,19 +160,19 @@ function App() {
         </button>
       </div>
 
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="max-w-6xl mx-auto">
 
           {/* 受注登録タブ */}
           <div className={activeTab === "form" ? "block" : "hidden"}>
-            <div className="grid grid-cols-12 gap-6 animate-in fade-in duration-300">
-              <div className="col-span-8 bg-white border rounded-lg shadow-sm p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 animate-in fade-in duration-300">
+              <div className="col-span-1 md:col-span-8 bg-white border rounded-lg shadow-sm p-4 sm:p-6 space-y-6">
                 <div className="flex items-center justify-between border-b pb-4 mb-2">
                   <h2 className="text-sm font-bold text-slate-600">新規受注入力</h2>
                   <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">READY</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">受注番号</label>
                     <input type="text" value={orderNo} readOnly className="w-full h-10 px-3 border border-slate-200 rounded bg-slate-50 font-mono text-sm" />
                   </div>
@@ -186,7 +186,7 @@ function App() {
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">商品名称</label>
                     <input type="text" value={itemName} onChange={e => setItemName(e.target.value)} className="w-full h-10 px-3 border border-slate-300 rounded text-sm focus:border-sky-600 outline-none" />
                   </div>
@@ -200,7 +200,7 @@ function App() {
                   </div>
                 </div>
               </div>
-              <div className="col-span-4 space-y-4">
+              <div className="col-span-1 md:col-span-4 space-y-4">
                 <div className="bg-slate-800 rounded-lg p-6 text-white shadow-lg space-y-4">
                   <div className="text-right border-b border-slate-700 pb-2">
                     <div className="text-[10px] text-slate-400 font-bold uppercase">SUBTOTAL</div>
@@ -212,7 +212,7 @@ function App() {
                   </div>
                   <div className="text-right pt-2">
                     <div className="text-[10px] text-sky-400 font-bold uppercase">TOTAL</div>
-                    <div className={`text-4xl font-mono font-bold ${total > 1000000 ? "text-red-400" : "text-sky-400"}`}>
+                    <div className={`text-3xl sm:text-4xl font-mono font-bold ${total > 1000000 ? "text-red-400" : "text-sky-400"} break-all`}>
                       {total.toLocaleString()}
                     </div>
                   </div>
@@ -235,37 +235,37 @@ function App() {
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 </button>
               </div>
-              <div className="px-6 py-3 border-b bg-white flex flex-wrap gap-3 items-end">
-                <div>
+              <div className="px-4 py-3 border-b bg-white flex flex-wrap gap-3 items-end">
+                <div className="w-full sm:w-auto">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">得意先名</label>
-                  <input type="text" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)} onKeyDown={e => e.key === "Enter" && fetchHistory()} placeholder="部分一致" className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-36" />
+                  <input type="text" value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)} onKeyDown={e => e.key === "Enter" && fetchHistory()} placeholder="部分一致" className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-full sm:w-36" />
                 </div>
-                <div>
+                <div className="w-full sm:w-auto">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">商品名</label>
-                  <input type="text" value={filterItem} onChange={e => setFilterItem(e.target.value)} onKeyDown={e => e.key === "Enter" && fetchHistory()} placeholder="部分一致" className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-36" />
+                  <input type="text" value={filterItem} onChange={e => setFilterItem(e.target.value)} onKeyDown={e => e.key === "Enter" && fetchHistory()} placeholder="部分一致" className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-full sm:w-36" />
                 </div>
-                <div>
+                <div className="w-full sm:w-auto">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">カテゴリ</label>
-                  <select value={filterCategoryId} onChange={e => setFilterCategoryId(Number(e.target.value))} className="h-8 px-2 border border-slate-300 rounded text-xs bg-white focus:border-sky-600 outline-none w-28">
+                  <select value={filterCategoryId} onChange={e => setFilterCategoryId(Number(e.target.value))} className="h-8 px-2 border border-slate-300 rounded text-xs bg-white focus:border-sky-600 outline-none w-full sm:w-28">
                     <option value={0}>全て</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <div>
+                <div className="w-full sm:w-auto">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">開始日</label>
-                  <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none" />
+                  <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-full" />
                 </div>
-                <div>
+                <div className="w-full sm:w-auto">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">終了日</label>
-                  <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none" />
+                  <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} className="h-8 px-2 border border-slate-300 rounded text-xs focus:border-sky-600 outline-none w-full" />
                 </div>
-                <button onClick={fetchHistory} disabled={loading} className="h-8 px-4 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold rounded transition-colors">検索</button>
-                <button onClick={handleExportCsv} className="h-8 px-4 bg-slate-600 hover:bg-slate-500 text-white text-xs font-bold rounded transition-colors flex items-center gap-1">
+                <button onClick={fetchHistory} disabled={loading} className="h-8 px-4 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold rounded transition-colors w-full sm:w-auto">検索</button>
+                <button onClick={handleExportCsv} className="h-8 px-4 bg-slate-600 hover:bg-slate-500 text-white text-xs font-bold rounded transition-colors flex items-center justify-center gap-1 w-full sm:w-auto">
                   <Download className="w-3 h-3" /> CSV
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[700px]">
                   <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b">
                     <tr>
                       <th className="px-6 py-3">受注日時</th>
@@ -311,8 +311,8 @@ function App() {
         </div>
       </main>
 
-      <footer className="h-8 px-4 border-t bg-white text-[10px] flex items-center text-slate-400 justify-between">
-        <div className="flex gap-4">
+      <footer className="py-3 px-4 border-t bg-white text-[10px] flex flex-col sm:flex-row items-center text-slate-400 justify-between gap-2 shrink-0">
+        <div className="flex flex-wrap justify-center gap-4 text-center sm:text-left">
           <span>Target: .NET 8 Web API + React</span>
           <span>Database: PostgreSQL</span>
           <span>Agent: FastAPI + LangGraph</span>

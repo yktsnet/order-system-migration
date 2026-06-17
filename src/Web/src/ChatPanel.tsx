@@ -73,8 +73,7 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm flex flex-col animate-in fade-in duration-300"
-         style={{ height: "calc(100vh - 200px)" }}>
+    <div className="bg-white border rounded-lg shadow-sm flex flex-col animate-in fade-in duration-300 h-[70vh] min-h-[400px] md:h-[calc(100vh-200px)]">
 
       {/* Header */}
       <div className="px-6 py-4 border-b bg-slate-50/50 flex items-center gap-2 shrink-0">
@@ -157,13 +156,13 @@ export function ChatPanel() {
       {/* Input */}
       <div className="px-6 py-4 border-t bg-white shrink-0">
         {/* サジェスト */}
-        <div className="mb-2 flex gap-2 flex-wrap">
+        <div className="mb-2 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
           {SUGGESTED.map((q) => (
             <button
               key={q}
               onClick={() => sendMessage(q)}
               disabled={loading}
-              className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 rounded transition-colors"
+              className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 rounded transition-colors flex-shrink-0"
             >
               {q}
             </button>
