@@ -164,7 +164,7 @@ function App() {
         <div className="max-w-6xl mx-auto">
 
           {/* 受注登録タブ */}
-          {activeTab === "form" && (
+          <div className={activeTab === "form" ? "block" : "hidden"}>
             <div className="grid grid-cols-12 gap-6 animate-in fade-in duration-300">
               <div className="col-span-8 bg-white border rounded-lg shadow-sm p-6 space-y-6">
                 <div className="flex items-center justify-between border-b pb-4 mb-2">
@@ -222,10 +222,10 @@ function App() {
                 </button>
               </div>
             </div>
-          )}
+          </div>
 
           {/* 注文履歴タブ */}
-          {activeTab === "history" && (
+          <div className={activeTab === "history" ? "block" : "hidden"}>
             <div className="bg-white border rounded-lg shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
               <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50/50">
                 <h2 className="text-sm font-bold text-slate-600 flex items-center gap-2">
@@ -302,10 +302,12 @@ function App() {
                 </table>
               </div>
             </div>
-          )}
+          </div>
 
           {/* データ分析タブ */}
-          {activeTab === "chat" && <ChatPanel />}
+          <div className={activeTab === "chat" ? "block" : "hidden"}>
+            <ChatPanel />
+          </div>
         </div>
       </main>
 

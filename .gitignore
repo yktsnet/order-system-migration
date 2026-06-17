@@ -18,6 +18,7 @@ volume/
 .env
 
 # --- Python (Webhook listener) ---
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
