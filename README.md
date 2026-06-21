@@ -317,19 +317,10 @@ graph LR
 
 ### Deployment Steps (Initial)
 
-**1. GitHub Secrets の設定**
+main ブランチへの push で GitHub Actions が自動デプロイ（Tailscale 経由 rsync + `docker compose up --build`）。
+必要な GitHub Secrets（デプロイ先ホスト・SSH 鍵・Tailscale OAuth・`GEMINI_API_KEY` 等）はリポジトリ運用ドキュメントで管理する（README には記載しない）。
 
-GitHub リポジトリの Settings → Secrets → Actions に以下を登録してください。
-
-| Secret | 説明 |
-|---|---|
-| `DEPLOY_HOST` | デプロイ先の Tailscale ホスト名（例: `sv6.tail166775.ts.net`） |
-| `DEPLOY_USER` | デプロイ先のユーザー名（例: `sv6`） |
-| `SSH_PRIVATE_KEY` | デプロイ先への SSH 秘密鍵 |
-| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID（Keys: Write スコープ） |
-| `TS_OAUTH_SECRET` | Tailscale OAuth Secret |
-
-**2. 初回デプロイ**
+手動デプロイが必要な場合:
 
 ```bash
 cp .env.example .env  # GEMINI_API_KEY を記入
