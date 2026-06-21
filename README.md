@@ -253,14 +253,14 @@ src/Agent/
 
 ## 5. Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | React, TypeScript, Vite, Tailwind CSS |
-| **Backend** | .NET 8 (Minimal API), xUnit |
-| **AI Agent** | Python, FastAPI, LangGraph, Gemini API |
-| **Database** | PostgreSQL (Dapper / psycopg2) |
-| **Object Storage** | LocalStack (AWS S3 互換) — `AWS__ServiceURL` の差し替えのみで本番 S3 へ移行可能 |
-| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (オンプレ) |
+| Layer | Technology | Reason |
+|---|---|---|
+| **Frontend** | React, TypeScript, Vite, Tailwind CSS | 受注操作と AI チャットの2系統を扱う SPA。型安全と高速ビルドを両立 |
+| **Backend** | .NET 8 (Minimal API), xUnit | 移行元 C#/WinForms の言語資産を引き継ぎ軽量 API へ再構成。税計算は境界値テストで担保 |
+| **AI Agent** | Python, FastAPI, LangGraph, Gemini API | Text-to-SQL の実行をグラフで管理しエラー原因を追跡可能に。Gemini は無料枠の上限が高く検証規模に最適 |
+| **Database** | PostgreSQL (Dapper / psycopg2) | 既存が SQL ベースで親和性が高い。.NET 側は Dapper、Agent 側は psycopg2 |
+| **Object Storage** | LocalStack (AWS S3 互換) | `AWS__ServiceURL` の差し替えのみで本番 S3 へ移行可能。デプロイ前にローカルで検証できる |
+| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (オンプレ) | 3サービスを compose で一括起動。IaC・CI/CD・常時公開まで一人で構築 |
 
 ---
 
