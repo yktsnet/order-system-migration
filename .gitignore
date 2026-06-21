@@ -42,9 +42,8 @@ yarn-error.log*
 PLAN.md
 JUDGE.md
 
-# --- Claude / personal context ---
-.claude/
-CLAUDE.md
-context/
-issues/
+# --- Claude project files ---
+# 公開リポのため harness（settings.json / CLAUDE.md / context / issues）は追跡する。
+# 個人ローカル上書きのみ無視。
+.claude/settings.local.json
 src/Api/appsettings.Development.json
