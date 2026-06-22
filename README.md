@@ -1,3 +1,5 @@
+[🇯🇵 日本語](README.md) | [🇬🇧 English](README.en.md)
+
 # .NET WinForms Migration (Order Management System)
 
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
