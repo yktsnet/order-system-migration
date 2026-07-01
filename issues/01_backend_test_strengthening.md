@@ -3,7 +3,7 @@ id: 01
 skill: pr-workflow
 branch-slug: backend-test-strengthening
 github_issue: 1
-status: open
+status: close
 type: fix
 対象: src/Api.Tests/TaxServiceTests.cs (新規), src/Api.Tests/OrderServiceRegisterDeleteTests.cs (新規), src/Api/Services/TaxService.cs, src/Api/Services/OrderService.cs
 内容: C#側は Calculate の計算ロジックのみテストされており、TaxService単体の境界値テストと、移行時に重要な「注文の登録・取消（修正を許容しない）」というドメインルールに関するテストが不足している。Python Agent 側（test_agent.py）と同等の網羅性を目指し、DBアクセス部分はモック/インメモリで代替した単体テストを追加する。
