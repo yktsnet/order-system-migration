@@ -2,7 +2,7 @@
 id: 01
 skill: pr-workflow
 branch-slug: backend-test-strengthening
-github_issue:
+github_issue: 1
 status: open
 type: fix
 対象: src/Api.Tests/TaxServiceTests.cs (新規), src/Api.Tests/OrderServiceRegisterDeleteTests.cs (新規), src/Api/Services/TaxService.cs, src/Api/Services/OrderService.cs
