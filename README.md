@@ -5,7 +5,7 @@
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
 [![Deploy](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml)
 
-レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 8 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
+レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 10 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
 
 [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms 移行）の姉妹リポ。WinForms 固有の問題（UI フリーズ・LPT1 依存・画面クラスへのロジック集中）の解体と再構成に加え、**責務分離が完了した構造への AI 機能の追加統合**まで扱う。
 
@@ -64,7 +64,7 @@ uvicorn main:app --reload --port 8001
 
 - **解読**: 画面・SQL・業務ロジックが混在したコードの課題特定
 - **分離**: UI、Service、Repository 層への責務分離
-- **刷新**: .NET 8 Web API と React による再構築
+- **刷新**: .NET 10 Web API と React による再構築
 - **品質**: テスタビリティの確保と単体テストの導入
 - **拡張**: 責務分離が完了した構造への AI 機能の追加統合
 
@@ -182,7 +182,7 @@ OrderService（DBアクセス・トランザクション管理）
 
 ### Before / After
 
-| Before (WinForms + Excel) | After (.NET 8 + React + Agent) |
+| Before (WinForms + Excel) | After (.NET 10 + React + Agent) |
 |---|---|
 | フィルタ操作 → CSV エクスポート → Excel 手動集計 | 自然言語で問うと即答が返る |
 | 得意先ランキングは担当者が加工して初めて判明 | 「ランキングは？」の一言で回答 |
@@ -192,10 +192,10 @@ OrderService（DBアクセス・トランザクション管理）
 
 ```
 【Phase 1】
-React → .NET 8 API → PostgreSQL
+React → .NET 10 API → PostgreSQL
 
 【Phase 2 追加】
-React → .NET 8 API → PostgreSQL
+React → .NET 10 API → PostgreSQL
       ↘
         Python FastAPI (Agent) → LangGraph → PostgreSQL
 ```
@@ -258,7 +258,7 @@ src/Agent/
 | Layer | Technology | Reason |
 |---|---|---|
 | **Frontend** | React, TypeScript, Vite, Tailwind CSS | 受注操作と AI チャットの2系統を扱う SPA。型安全と高速ビルドを両立 |
-| **Backend** | .NET 8 (Minimal API), xUnit | 移行元 C#/WinForms の言語資産を引き継ぎ軽量 API へ再構成。税計算は境界値テストで担保 |
+| **Backend** | .NET 10 (Minimal API), xUnit | 移行元 C#/WinForms の言語資産を引き継ぎ軽量 API へ再構成。税計算は境界値テストで担保 |
 | **AI Agent** | Python, FastAPI, LangGraph, Gemini API | Text-to-SQL の実行をグラフで管理しエラー原因を追跡可能に。Gemini は無料枠の上限が高く検証規模に最適 |
 | **Database** | PostgreSQL (Dapper / psycopg2) | 既存が SQL ベースで親和性が高い。.NET 側は Dapper、Agent 側は psycopg2 |
 | **Object Storage** | LocalStack (AWS S3 互換) | `AWS__ServiceURL` の差し替えのみで本番 S3 へ移行可能。デプロイ前にローカルで検証できる |
@@ -381,7 +381,7 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 │   │   ├── requirements-dev.txt
 │   │   ├── tests/                        # pytest（36 ケース・LLM/DB はモック）
 │   │   └── Dockerfile
-│   ├── Api/                              # After: .NET 8 Minimal API
+│   ├── Api/                              # After: .NET 10 Minimal API
 │   │   ├── Endpoints/
 │   │   ├── Services/
 │   │   │   ├── OrderService.cs

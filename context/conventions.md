@@ -3,7 +3,7 @@
 コードの書き方・編集の共通ルール（どう書くか）。ディレクトリ構成・データフローは `structure.md` を参照。
 
 ## 1. 技術スタック
-- **バックエンド**: .NET 8 Minimal API。テストは xUnit。
+- **バックエンド**: .NET 10 Minimal API。テストは xUnit。
 - **フロントエンド**: React + TypeScript + Vite + Tailwind CSS。
 - **AI Agent**: Python + FastAPI + LangGraph（Gemini API、Text-to-SQL）。
 - **データベース**: PostgreSQL（.NET 側 Dapper / Agent 側 psycopg2）。

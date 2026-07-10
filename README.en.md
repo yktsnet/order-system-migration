@@ -5,7 +5,7 @@
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
 [![Deploy](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml)
 
-A sample project for practicing a complete modernization process: step-by-step migration of a legacy Windows business application (WinForms) to `.NET 8 Web API + React`, and further adding a **natural language interface via a Python Agent**.
+A sample project for practicing a complete modernization process: step-by-step migration of a legacy Windows business application (WinForms) to `.NET 10 Web API + React`, and further adding a **natural language interface via a Python Agent**.
 
 Sister repo of [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) (WebForms migration). In addition to dismantling and restructuring WinForms-specific issues (UI freeze, LPT1 dependency, logic concentration in the screen class), this project also covers **additional integration of AI features into a structurally separated architecture**.
 
@@ -64,7 +64,7 @@ The goal of this project is not simply rebuilding screens, but presenting the pr
 
 - **Decode**: Identify issues in code where screens, SQL, and business logic are mixed together
 - **Separate**: Decompose responsibilities into UI, Service, and Repository layers
-- **Rebuild**: Reconstruct with .NET 8 Web API and React
+- **Rebuild**: Reconstruct with .NET 10 Web API and React
 - **Quality**: Ensure testability and introduce unit tests
 - **Extend**: Additional integration of AI features into a structurally separated architecture
 
@@ -182,7 +182,7 @@ Without structural separation, AI cannot be added as an independent component. B
 
 ### Before / After
 
-| Before (WinForms + Excel) | After (.NET 8 + React + Agent) |
+| Before (WinForms + Excel) | After (.NET 10 + React + Agent) |
 |---|---|
 | Filter → CSV export → manual Excel aggregation | Instant answer to natural language questions |
 | Customer rankings only apparent after manual processing | Answer with just "What's the ranking?" |
@@ -192,10 +192,10 @@ Without structural separation, AI cannot be added as an independent component. B
 
 ```
 [Phase 1]
-React → .NET 8 API → PostgreSQL
+React → .NET 10 API → PostgreSQL
 
 [Phase 2 addition]
-React → .NET 8 API → PostgreSQL
+React → .NET 10 API → PostgreSQL
       ↘
         Python FastAPI (Agent) → LangGraph → PostgreSQL
 ```
@@ -258,7 +258,7 @@ src/Agent/
 | Layer | Technology | Reason |
 |---|---|---|
 | **Frontend** | React, TypeScript, Vite, Tailwind CSS | SPA handling both order operations and AI chat. Combines type safety with fast builds |
-| **Backend** | .NET 8 (Minimal API), xUnit | Inherits C#/WinForms language assets, restructured as a lightweight API. Tax calculation guaranteed by boundary value tests |
+| **Backend** | .NET 10 (Minimal API), xUnit | Inherits C#/WinForms language assets, restructured as a lightweight API. Tax calculation guaranteed by boundary value tests |
 | **AI Agent** | Python, FastAPI, LangGraph, Gemini API | Text-to-SQL execution managed with a graph for traceable errors. Gemini's free tier has high limits — optimal for verification scale |
 | **Database** | PostgreSQL (Dapper / psycopg2) | High affinity with the existing SQL-based system. .NET side uses Dapper, Agent side uses psycopg2 |
 | **Object Storage** | LocalStack (AWS S3 compatible) | Switchable to production S3 by just changing `AWS__ServiceURL`. Enables local verification before deployment |
@@ -381,7 +381,7 @@ cp .env.example .env  # Fill in GEMINI_API_KEY
 │   │   ├── requirements-dev.txt
 │   │   ├── tests/                        # pytest (36 cases, LLM/DB mocked)
 │   │   └── Dockerfile
-│   ├── Api/                              # After: .NET 8 Minimal API
+│   ├── Api/                              # After: .NET 10 Minimal API
 │   │   ├── Endpoints/
 │   │   ├── Services/
 │   │   │   ├── OrderService.cs

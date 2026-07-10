@@ -19,7 +19,7 @@ order-system-migration/
 
 ```
 src/
-├── Api/                    # .NET 8 Minimal API
+├── Api/                    # .NET 10 Minimal API
 │   ├── Program.cs          # エントリポイント・DI・エンドポイント登録
 │   ├── Endpoints/          # ルート定義
 │   ├── Services/
