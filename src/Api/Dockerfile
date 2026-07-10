@@ -15,7 +15,7 @@ RUN npm run build
 # -----------------------------------
 # 2. バックエンド（.NET）ビルド用ステージ
 # -----------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /src
 
 # .NETの依存関係をリストア
@@ -33,7 +33,7 @@ RUN dotnet publish -c Release -o /app/out
 # -----------------------------------
 # 3. 実行用ステージ
 # -----------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=backend-build /app/out .
 
