@@ -53,4 +53,12 @@ public class OrderServiceTests
         var result = svc.Calculate(500, 7);
         Assert.Equal(3500m, result.SubTotal);
     }
+
+    [Fact]
+    public void Constructor_MissingDefaultConnectionString_ThrowsInvalidOperationException()
+    {
+        var config = new ConfigurationBuilder().Build();
+        Assert.Throws<InvalidOperationException>(
+            () => new OrderService(config, new TaxService(), null!));
+    }
 }

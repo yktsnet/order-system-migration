@@ -31,6 +31,7 @@ from agent import (
     validate_sql,
     execute_sql,
     format_response,
+    handle_error,
     route_classify,
     route_validate,
     route_execute,
@@ -304,3 +305,22 @@ class TestFormatResponse:
         with patch("agent.db.log_agent") as mock_log:
             format_response(base_state(result=[]))
         mock_log.assert_called_once()
+
+
+# ---------- handle_error ----------
+
+
+class TestHandleError:
+    def test_answer_contains_error_message(self):
+        with patch("agent.db.log_agent"):
+            result = handle_error(base_state(error='relation "orders" does not exist'))
+        assert 'relation "orders" does not exist' in result["answer"]
+
+    def test_log_agent_called_with_success_false(self):
+        with patch("agent.db.log_agent") as mock_log:
+            handle_error(
+                base_state(sql="SELECT 1", error="boom", retry_count=2)
+            )
+        mock_log.assert_called_once_with(
+            base_state()["question"], "SELECT 1", False, 2, "boom"
+        )
