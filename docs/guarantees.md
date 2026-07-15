@@ -93,6 +93,21 @@
 | 監査ログ記録 | `test_log_agent_called_on_success`, `test_log_agent_called_on_empty_result` |
 | エラー時のメッセージ・監査記録 | `test_answer_contains_error_message`, `test_log_agent_called_with_success_false` |
 
+### 5. `src/Agent/tests/test_main.py` — src/Agent/main.py (FastAPI エンドポイント)
+
+- `GET /health` は 200 で `{"status": "ok"}` を返す
+- `POST /chat` は `message` を初期状態の `question`（`retry_count=0`・`error=""`）として `agent_graph.invoke` に渡し、最終状態から `answer`・`sql`・`data` を組み立てて 200 で返す
+- `POST /chat` は最終状態の `sql` が空文字の場合、レスポンスの `sql` を `null` にする
+- `POST /chat` は `message` が欠けている場合、422 を返す
+
+| 保証(要約) | 対応テスト |
+|---|---|
+| `/health` | `test_health_returns_ok` |
+| `/chat` のレスポンス整形 | `test_chat_returns_answer_sql_and_data` |
+| `/chat` の初期状態の組み立て | `test_chat_passes_message_as_initial_question` |
+| 空SQLは`null` | `test_chat_empty_sql_becomes_null` |
+| `message`必須 | `test_chat_missing_message_returns_422` |
+
 ## Gaps
 
 以下は保証すべきと思われるが、対応するテストが無い。
@@ -101,7 +116,6 @@
 - `NpgsqlOrderRepository`（本番用の `IOrderRepository` 実装）はNpgsql直結のため実DB無しでは単体テストできない
 - `TaxService.Calculate`/`OrderService.Calculate` に負の `subTotal`/`price`/`qty` を渡した場合の挙動は未定義（業務上想定されない入力のため、現状のテストからは切り捨て方向の契約を断定できない）
 - 在庫数量を超える数量で `RegisterOrderAsync` を呼んだ場合に在庫チェックが働くかどうかは未テスト（現行実装にチェック処理が無く、意図した仕様か未確定な変更前提のため保証化を見送り）
-- `src/Agent/main.py` の FastAPI エンドポイント（`POST /chat`, `GET /health`）に対応するテストが無い
 - `src/Agent/db.py`（`execute_query`, `log_agent` の実DBアクセス実装）は実DB無しでは単体テストできない
 
 ## About
