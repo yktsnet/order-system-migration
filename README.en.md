@@ -3,11 +3,23 @@
 # .NET WinForms Migration (Order Management System)
 
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
-[![Deploy](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml)
 
 A sample project for practicing a complete modernization process: step-by-step migration of a legacy Windows business application (WinForms) to `.NET 10 Web API + React`, and further adding a **natural language interface via a Python Agent**.
 
 Sister repo of [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) (WebForms migration). In addition to dismantling and restructuring WinForms-specific issues (UI freeze, LPT1 dependency, logic concentration in the screen class), this project also covers **additional integration of AI features into a structurally separated architecture**.
+
+## Screenshots
+
+The migrated (After) React frontend. `docker compose up` reproduces the same screens locally.
+
+| Order entry | Order history & cancellation |
+|---|---|
+| ![Order entry screen](docs/screenshots/winforms01.png) | ![Order history and cancellation screen](docs/screenshots/winforms02.png) |
+| Subtotal, tax, and total are calculated instantly from unit price and quantity. The work that blocked the UI thread in the WinForms version moved to the Web API | Filters by customer, product, category, and date range, with CSV export |
+
+![Data analysis (AI Agent) screen](docs/screenshots/winforms03.png)
+
+The data analysis tab. A LangGraph + Gemini agent interprets natural-language questions such as "What are the total sales by category?", then answers while exposing the SQL it generated. This feature was added after the separation of concerns was complete.
 
 ---
 
@@ -57,7 +69,6 @@ uvicorn main:app --reload --port 8001
 
 The goal of this project is not simply rebuilding screens, but presenting the process of **"how to dismantle tightly coupled legacy code and restructure it into a modern architecture."**
 
-**After Demo:** https://winforms.ykts.net  
 **API Documentation (Swagger UI):** `/api-docs`
 
 ### Key Practices
@@ -262,7 +273,7 @@ src/Agent/
 | **AI Agent** | Python, FastAPI, LangGraph, Gemini API | Text-to-SQL execution managed with a graph for traceable errors. Gemini's free tier has high limits — optimal for verification scale |
 | **Database** | PostgreSQL (Dapper / psycopg2) | High affinity with the existing SQL-based system. .NET side uses Dapper, Agent side uses psycopg2 |
 | **Object Storage** | LocalStack (AWS S3 compatible) | Switchable to production S3 by just changing `AWS__ServiceURL`. Enables local verification before deployment |
-| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (on-premises) | 3 services started at once with compose. IaC, CI/CD, and always-on demo built by one person |
+| **Infrastructure** | Docker Compose, Terraform, Cloudflare Tunnel, GitHub Actions, NixOS (on-premises) | 3 services started at once with compose. IaC, CI/CD, and an always-on demo built by one person |
 
 ---
 
@@ -286,48 +297,21 @@ src/Agent/
 
 ## 7. Demo Operations
 
-**After Demo:** https://winforms.ykts.net
+See [Screenshots](#screenshots) above for the running application. Local startup is covered by `docker compose up` in [Quick Start](#quick-start).
 
-[attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) (WebForms After) and this repo (WinForms After) each have independent Cloudflare Tunnels and **both run continuously**.
+### Public setup
 
-```mermaid
-graph LR
-    User["Browser"]
-    TunnelWIN["Cloudflare Tunnel\nwinforms.ykts.net"]
-    TunnelWF["Cloudflare Tunnel\nwebforms.ykts.net"]
-    subgraph SERVER["On-Premises Server (NixOS)"]
-        SVC1["order-system-migration\nDocker Compose :5153"]
-        SVC2["attendance-system-migration\nDocker Compose :5154"]
-        DB1[("PostgreSQL")]
-        DB2[("PostgreSQL")]
-    end
-    User -->|"HTTPS"| TunnelWIN
-    User -->|"HTTPS"| TunnelWF
-    TunnelWIN --> SVC1
-    TunnelWF --> SVC2
-    SVC1 --> DB1
-    SVC2 --> DB2
-```
+The sister repo [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration) (WebForms After) and this repo (WinForms After) each get an independent Cloudflare Tunnel and can be co-located on a single on-premises NixOS server. Ports are split (5153 / 5154) and the tunnel routes by hostname, so browsers reach the server only through the tunnel and no host port is exposed.
 
-### Deployment Design
+### Deployment method
 
-This project's deployment adopts a **"push-style deployment"** that rsyncs to the server from GitHub Actions via Tailscale and runs `docker compose up --build`.
+Deployment is **push-style**: GitHub Actions rsyncs to the server over Tailscale, then runs `docker compose up --build`.
 
-* GitHub Actions triggered by push to main branch
-* After tests pass, SSH connection via Tailscale VPN to transfer source
-* Server-side runs `docker compose up -d --build` to update containers
+* GitHub Actions triggered by push to the main branch
+* After tests pass, SSH via Tailscale VPN to transfer the source
+* The server runs `docker compose up -d --build` to update containers
 
-### Deployment Steps (Initial)
-
-Pushing to the main branch triggers automatic deployment via GitHub Actions (rsync via Tailscale + `docker compose up --build`).  
-Required GitHub Secrets (deploy host, SSH key, Tailscale OAuth, `GEMINI_API_KEY`, etc.) are managed in repository operations documentation (not included in README).
-
-For manual deployment:
-
-```bash
-cp .env.example .env  # Fill in GEMINI_API_KEY
-./infrastructure/deploy.sh
-```
+This keeps the host's SSH port off the public internet and lets the CI's reach be constrained by Tailscale ACLs.
 
 ---
 
@@ -350,10 +334,10 @@ cp .env.example .env  # Fill in GEMINI_API_KEY
 .
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                        # CI (.NET tests, React build, Python Agent tests)
-│       └── deploy.yml                    # Deploy (rsync via Tailscale + docker compose up)
+│       └── ci.yml                        # CI (.NET tests, React build, Python Agent tests)
 ├── docs/
-│   └── design.md                         # UI design policy (colors, component rules)
+│   ├── design.md                         # UI design policy (colors, component rules)
+│   └── screenshots/                      # Screen captures used in the README
 ├── infrastructure/
 │   ├── db/
 │   │   ├── init/
@@ -364,7 +348,6 @@ cp .env.example .env  # Fill in GEMINI_API_KEY
 │   ├── localstack/
 │   │   └── init/
 │   │       └── 01_create_bucket.sh       # Auto-creates bucket after LocalStack starts
-│   ├── deploy.sh                         # Mac → server deploy (rsync, docker compose up)
 │   ├── db-init.sh                        # DB initialization (first time only)
 │   ├── db-seed.sh                        # Sample data insertion
 │   ├── main.tf                           # Terraform definition (for AWS ECS/RDS/S3 environment setup)

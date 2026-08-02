@@ -3,11 +3,23 @@
 # .NET WinForms Migration (Order Management System)
 
 [![CI](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/ci.yml)
-[![Deploy](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/yktsnet/order-system-migration/actions/workflows/deploy.yml)
 
 レガシーな Windows 業務アプリ（WinForms）を題材に、`.NET 10 Web API + React` への段階的移行、さらに **Python Agent による自然言語インターフェース** の追加まで、一連のモダナイゼーション・プロセスを実践するためのサンプルプロジェクト。
 
 [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms 移行）の姉妹リポ。WinForms 固有の問題（UI フリーズ・LPT1 依存・画面クラスへのロジック集中）の解体と再構成に加え、**責務分離が完了した構造への AI 機能の追加統合**まで扱う。
+
+## Screenshots
+
+移行後（After）の React フロントエンド。`docker compose up` で同じ画面をローカルに再現できる。
+
+| 受注登録 | 注文履歴・取消 |
+|---|---|
+| ![受注登録画面](docs/screenshots/winforms01.png) | ![注文履歴・取消画面](docs/screenshots/winforms02.png) |
+| 単価・数量から小計・消費税・合計を即時計算する。WinForms 版で UI スレッドを塞いでいた処理を Web API 側へ移した | 得意先名・商品名・カテゴリ・期間で絞り込み、CSV 出力まで行う |
+
+![データ分析（AI Agent）画面](docs/screenshots/winforms03.png)
+
+データ分析タブ。「カテゴリ別の売上合計を教えて」のような自然言語の質問を LangGraph + Gemini の Agent が解釈し、生成した SQL を開示したうえで回答する。責務分離が完了した構造へ後から追加した機能。
 
 ---
 
@@ -57,7 +69,6 @@ uvicorn main:app --reload --port 8001
 
 本プロジェクトの目的は、単なる画面の作り替えではなく、**「密結合なレガシーコードをいかに解体し、モダンなアーキテクチャへ再構成するか」** のプロセスを提示することにある。
 
-**After Demo:** https://winforms.ykts.net  
 **API ドキュメント (Swagger UI):** `/api-docs`
 
 ### Key Practices
@@ -286,48 +297,21 @@ src/Agent/
 
 ## 7. Demo Operations
 
-**After Demo:** https://winforms.ykts.net
+動作は上部の [Screenshots](#screenshots) を参照。手元での起動は [Quick Start](#quick-start) の `docker compose up` で完結する。
 
-[attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms After）と本リポ（WinForms After）はそれぞれ独立した Cloudflare Tunnel を持ち、**両方常時稼働**する。
+### 公開構成
 
-```mermaid
-graph LR
-    User["ブラウザ"]
-    TunnelWIN["Cloudflare Tunnel\nwinforms.ykts.net"]
-    TunnelWF["Cloudflare Tunnel\nwebforms.ykts.net"]
-    subgraph SERVER["オンプレサーバー（NixOS）"]
-        SVC1["order-system-migration\nDocker Compose :5153"]
-        SVC2["attendance-system-migration\nDocker Compose :5154"]
-        DB1[("PostgreSQL")]
-        DB2[("PostgreSQL")]
-    end
-    User -->|"HTTPS"| TunnelWIN
-    User -->|"HTTPS"| TunnelWF
-    TunnelWIN --> SVC1
-    TunnelWF --> SVC2
-    SVC1 --> DB1
-    SVC2 --> DB2
-```
+姉妹リポの [attendance-system-migration](https://github.com/yktsnet/attendance-system-migration)（WebForms After）と本リポ（WinForms After）は、それぞれ独立した Cloudflare Tunnel を持ち、1台のオンプレサーバー（NixOS）に同居させられる。ポートを 5153 / 5154 に分け、Tunnel 側でホスト名を振り分ける。ブラウザからサーバーへは Tunnel 経由のみで到達し、ホストのポートは公開しない。
 
-### Deployment Design
+### デプロイ方式
 
-本プロジェクトのデプロイは、GitHub Actions から Tailscale 経由で SV6 に rsync し、`docker compose up --build` を実行する **「プッシュ型デプロイ方式」** を採用しています。
+GitHub Actions から Tailscale 経由でサーバーへ rsync し、`docker compose up --build` を実行する **プッシュ型デプロイ**。
 
 * main ブランチへの push をトリガーに GitHub Actions が起動
 * テスト通過後、Tailscale VPN 経由で SSH 接続しソースを転送
 * サーバー側で `docker compose up -d --build` を実行してコンテナを更新
 
-### Deployment Steps (Initial)
-
-main ブランチへの push で GitHub Actions が自動デプロイ（Tailscale 経由 rsync + `docker compose up --build`）。
-必要な GitHub Secrets（デプロイ先ホスト・SSH 鍵・Tailscale OAuth・`GEMINI_API_KEY` 等）はリポジトリ運用ドキュメントで管理する（README には記載しない）。
-
-手動デプロイが必要な場合:
-
-```bash
-cp .env.example .env  # GEMINI_API_KEY を記入
-./infrastructure/deploy.sh
-```
+ホストの SSH ポートをインターネットへ公開せず、CI からの到達経路を Tailscale の ACL で絞れる点が採用理由。
 
 ---
 
@@ -350,10 +334,10 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 .
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                        # CI（.NET テスト・React ビルド・Python Agent テスト）
-│       └── deploy.yml                    # Deploy（Tailscale 経由 rsync + docker compose up）
+│       └── ci.yml                        # CI（.NET テスト・React ビルド・Python Agent テスト）
 ├── docs/
-│   └── design.md                         # UI デザイン方針（カラー・コンポーネント規則）
+│   ├── design.md                         # UI デザイン方針（カラー・コンポーネント規則）
+│   └── screenshots/                      # README 掲載の画面キャプチャ
 ├── infrastructure/
 │   ├── db/
 │   │   ├── init/
@@ -364,7 +348,6 @@ cp .env.example .env  # GEMINI_API_KEY を記入
 │   ├── localstack/
 │   │   └── init/
 │   │       └── 01_create_bucket.sh       # LocalStack 起動後にバケットを自動作成
-│   ├── deploy.sh                         # Mac → SV6 デプロイ（rsync・docker compose up）
 │   ├── db-init.sh                        # DB 初期化（初回のみ）
 │   ├── db-seed.sh                        # サンプルデータ投入
 │   ├── main.tf                           # Terraform 定義（AWS ECS/RDS/S3 環境構築用）
