@@ -151,16 +151,12 @@ After migration, components are fully separated by responsibility, eliminating W
 - **Portability**: Dockerization removes Windows-only constraints (LPT1, etc.).
 
 ```mermaid
-graph LR
-    React["React / TypeScript\n(UI Layer)"]
-    API["ASP.NET Core\nMinimal API\n(API Layer)"]
-    SVC["OrderService\n(Service Layer)"]
-    DAP["Dapper\n(Repository Layer)"]
-    DB[("PostgreSQL")]
-    React -->|"HTTP / JSON\nAsync, no UI freeze"| API
-    API --> SVC
-    SVC --> DAP
-    DAP --> DB
+flowchart TD
+    React["React / TypeScript<br/>UI Layer"]
+    React -->|"HTTP / JSON (async)"| API["ASP.NET Core Minimal API<br/>API Layer"]
+    API --> SVC["OrderService<br/>Service Layer"]
+    SVC --> DAP{{"Dapper<br/>Repository Layer"}}
+    DAP --> DB[("PostgreSQL")]
 ```
 
 ### Separation of Calculation Logic (Testability)

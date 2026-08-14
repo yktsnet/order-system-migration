@@ -151,16 +151,12 @@ graph TD
 - **ポータビリティ**: Docker 化により、Windows 専用制約（LPT1 等）を排除。
 
 ```mermaid
-graph LR
-    React["React / TypeScript\n(UI層)"]
-    API["ASP.NET Core\nMinimal API\n(API層)"]
-    SVC["OrderService\n(Service層)"]
-    DAP["Dapper\n(Repository層)"]
-    DB[("PostgreSQL")]
-    React -->|"HTTP / JSON\n非同期・UIフリーズなし"| API
-    API --> SVC
-    SVC --> DAP
-    DAP --> DB
+flowchart TD
+    React["React / TypeScript<br/>UI層"]
+    React -->|"HTTP / JSON（非同期）"| API["ASP.NET Core Minimal API<br/>API層"]
+    API --> SVC["OrderService<br/>Service層"]
+    SVC --> DAP{{"Dapper<br/>Repository層"}}
+    DAP --> DB[("PostgreSQL")]
 ```
 
 ### Separation of Calculation Logic (Testability)
